@@ -39,7 +39,7 @@
   <div id="toolbar">
     <label><input type="color" id="colorPicker" value="#ff0000"></label>
     <label>
-      <input type="range" id="brushSizeSlider" min="5" max="300" value=120" step="5">
+      <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
       <span id="brushSizeValue">120px</span>
     </label>
     <label>Trans.:
@@ -48,73 +48,17 @@
     <button onclick="undo()">↩</button>
     <button onclick="redo()">↪</button>
     <button onclick="save()">💾</button>
-    <label>
-  <button onclick="toggleDropdown()">🔢</button>
-  <select id="cartonDropdown" onchange="loadSelectedCarton()" style="display:none;"></select>
-</label>
-
+    <label> 
+      <button onclick="toggleDropdown()">🔢</button> 
+      <select id="cartonDropdown" onchange="loadSelectedCarton()" style="display:none;"></select>
+    </label>
     <label>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
       <button onclick="document.getElementById('fileInput').click()">📁</button>
     </label>
   </div>
-
   <canvas id="canvas"></canvas>
-
   <script>
-      let isDrawing = false; // Para saber si hay cambios en el canvas
-  let touchStartY = 0; // Para capturar la posición de inicio del toque
-
-  // Marcar cuando el usuario comienza a dibujar en el canvas
-  canvas.addEventListener("mousedown", () => isDrawing = true);
-  canvas.addEventListener("mouseup", () => isDrawing = false);
-  canvas.addEventListener("mousemove", () => {
-    if (isDrawing) {
-      window.onbeforeunload = () => "El cartón está en uso. ¿Seguro de que quieres salir?";
-    }
-  });
-
-  // También podemos marcar cuando el usuario termina de dibujar
-  canvas.addEventListener("mouseleave", () => isDrawing = false);
-  canvas.addEventListener("touchstart", () => isDrawing = true);
-  canvas.addEventListener("touchend", () => isDrawing = false);
-  canvas.addEventListener("touchmove", () => {
-    if (isDrawing) {
-      window.onbeforeunload = () => "El cartón está en uso. ¿Seguro de que quieres salir?";
-    }
-  });
-
-  // Detectar gesto de deslizamiento hacia abajo (que podría causar una actualización de la página)
-  window.addEventListener('touchstart', (event) => {
-    touchStartY = event.touches[0].pageY; // Guardamos la posición Y al inicio del toque
-  });
-
-  window.addEventListener('touchmove', (event) => {
-    const touchMoveY = event.touches[0].pageY;
-
-    // Si el usuario está deslizando hacia abajo más de 50px
-    if (touchMoveY > touchStartY + 50) {
-      if (isDrawing) {
-        // Si hay cambios no guardados, mostramos una alerta y evitamos la actualización
-        event.preventDefault();
-        event.stopPropagation();  // Detenemos el evento de actualización
-        const confirmUpdate = confirm("Hay un cartón en uso. ¿Quieres actualizar la página?");
-        
-        if (confirmUpdate) {
-          location.reload(); // Recargar la página si el usuario acepta
-        }
-      }
-    }
-  });
-
-  // También manejamos la advertencia para la actualización en el caso de que se intente salir de la página
-  window.addEventListener("beforeunload", (event) => {
-    if (isDrawing) {
-      // Si el usuario tiene cambios no guardados, muestra un mensaje de confirmación
-      event.preventDefault();
-      event.returnValue = "El cartón está en uso. ¿Seguro de que quieres salir?";
-    }
-  });
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let drawing = false;
@@ -126,7 +70,7 @@
     let opacity = +document.getElementById("opacityRange").value;
     let baseImage = new Image();
     let imageWidth, imageHeight, scale;
-
+    
     function resizeCanvasToFit(img) {
       const maxWidth = window.innerWidth * 0.95;
       const maxHeight = window.innerHeight * 0.85;
@@ -256,60 +200,75 @@
 
     const paramCarton = new URLSearchParams(window.location.search).get("carton");
     if (paramCarton) loadImageFromURL(paramCarton);
-    
-  function toggleDropdown() {
-    const dropdown = document.getElementById("cartonDropdown");
-    dropdown.style.display = dropdown.style.display === "none" ? "inline-block" : "none";
-  }
 
-  function loadSelectedCarton() {
-    const select = document.getElementById("cartonDropdown");
-    const selectedUrl = select.value;
-    if (selectedUrl) loadImageFromURL(selectedUrl);
-  }
-
-  fetch("cartones/list.json")
-    .then(response => response.json())
-    .then(files => {
+    function toggleDropdown() {
       const dropdown = document.getElementById("cartonDropdown");
-      dropdown.innerHTML = "";
+      dropdown.style.display = dropdown.style.display === "none" ? "inline-block" : "none";
+    }
 
-      const placeholder = document.createElement("option");
-      placeholder.textContent = "Selecciona un cartón...";
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      dropdown.appendChild(placeholder);
+    function loadSelectedCarton() {
+      const select = document.getElementById("cartonDropdown");
+      const selectedUrl = select.value;
+      if (selectedUrl) loadImageFromURL(selectedUrl);
+    }
 
-      if (files.length > 0) {
-        files.forEach(file => {
-          const nameWithoutExt = file.replace(/\.[^/.]+$/, "");
-          const parts = nameWithoutExt.split("-");
-          const lastPart = parts[parts.length - 1];
-          const option = document.createElement("option");
-          option.value = `cartones/${file}`;
-          option.textContent = lastPart;
-          dropdown.appendChild(option);
-        });
-      } else {
-        // Si no hay archivos, mantén el placeholder visible
-        const noFilesOption = document.createElement("option");
-        noFilesOption.textContent = "No hay cartones disponibles";
-        noFilesOption.disabled = true;
-        dropdown.appendChild(noFilesOption);
+    fetch("cartones/list.json")
+      .then(response => response.json())
+      .then(files => {
+        const dropdown = document.getElementById("cartonDropdown");
+        dropdown.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.textContent = "Selecciona un cartón...";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        dropdown.appendChild(placeholder);
+        if (files.length > 0) {
+          files.forEach(file => {
+            const nameWithoutExt = file.replace(/\.[^/.]+$/, "");
+            const parts = nameWithoutExt.split("-");
+            const lastPart = parts[parts.length - 1];
+            const option = document.createElement("option");
+            option.value = `cartones/${file}`;
+            option.textContent = lastPart;
+            dropdown.appendChild(option);
+          });
+        } else {
+          const noFilesOption = document.createElement("option");
+          noFilesOption.textContent = "No hay cartones disponibles";
+          noFilesOption.disabled = true;
+          dropdown.appendChild(noFilesOption);
+        }
+      })
+      .catch(err => {
+        console.error("No se pudo cargar list.json", err);
+        const dropdown = document.getElementById("cartonDropdown");
+        dropdown.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.textContent = "No hay cartones válidos";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        dropdown.appendChild(placeholder);
+      });
+
+    // Variables para manejar el gesto de arrastre
+    let isDrawing = false;
+    let touchStartY = 0;
+
+    // Función para confirmar la actualización de la página
+    function handleTouchMove(event) {
+      const touch = event.touches[0];
+      if (isDrawing) return;
+      if (touch.clientY - touchStartY > 100) {
+        isDrawing = true;
+        alert("¿Actualizar?");
+        window.location.reload();
       }
-    })
-    .catch(err => {
-      console.error("No se pudo cargar list.json", err);
-      // Si hay error en la carga de list.json, también mostrar un mensaje
-      const dropdown = document.getElementById("cartonDropdown");
-      dropdown.innerHTML = ""; // Limpiar dropdown
-      const placeholder = document.createElement("option");
-      placeholder.textContent = "No hay cartones válidos";
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      dropdown.appendChild(placeholder);
-    });
+    }
 
+    window.addEventListener("touchstart", (e) => {
+      touchStartY = e.touches[0].clientY;
+    });
+    window.addEventListener("touchmove", handleTouchMove);
   </script>
 </body>
 </html>

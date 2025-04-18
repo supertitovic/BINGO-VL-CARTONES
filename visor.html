@@ -198,8 +198,12 @@
       }
     });
 
-    const paramCarton = new URLSearchParams(window.location.search).get("carton");
-    if (paramCarton) loadImageFromURL(paramCarton);
+    // Verificar si hay un cartón en los parámetros de la URL al cargar la página
+    const urlParams = new URLSearchParams(window.location.search);
+    const cartonParam = urlParams.get("carton");
+    if (cartonParam) {
+      loadImageFromURL(cartonParam);
+    }
 
     function toggleDropdown() {
       const dropdown = document.getElementById("cartonDropdown");
@@ -209,7 +213,11 @@
     function loadSelectedCarton() {
       const select = document.getElementById("cartonDropdown");
       const selectedUrl = select.value;
-      if (selectedUrl) loadImageFromURL(selectedUrl);
+      if (selectedUrl) {
+        // Actualizar la URL con el cartón seleccionado
+        window.history.replaceState({}, "", `?carton=${selectedUrl}`);
+        loadImageFromURL(selectedUrl);
+      }
     }
 
     fetch("cartones/list.json")
@@ -249,13 +257,6 @@
         placeholder.selected = true;
         dropdown.appendChild(placeholder);
       });
-
-    // Esto asegura que se muestre siempre el mensaje antes de salir de la página
-    window.addEventListener("beforeunload", (e) => {
-      const confirmationMessage = "¿Deseas actualizar la página? Los cambios no guardados se perderán.";
-      (e || window.event).returnValue = confirmationMessage; // Standard for most browsers
-      return confirmationMessage; // For some browsers
-    });
   </script>
 </body>
 </html>

@@ -62,6 +62,59 @@
   <canvas id="canvas"></canvas>
 
   <script>
+      let isDrawing = false; // Para saber si hay cambios en el canvas
+  let touchStartY = 0; // Para capturar la posición de inicio del toque
+
+  // Marcar cuando el usuario comienza a dibujar en el canvas
+  canvas.addEventListener("mousedown", () => isDrawing = true);
+  canvas.addEventListener("mouseup", () => isDrawing = false);
+  canvas.addEventListener("mousemove", () => {
+    if (isDrawing) {
+      window.onbeforeunload = () => "El cartón está en uso. ¿Seguro de que quieres salir?";
+    }
+  });
+
+  // También podemos marcar cuando el usuario termina de dibujar
+  canvas.addEventListener("mouseleave", () => isDrawing = false);
+  canvas.addEventListener("touchstart", () => isDrawing = true);
+  canvas.addEventListener("touchend", () => isDrawing = false);
+  canvas.addEventListener("touchmove", () => {
+    if (isDrawing) {
+      window.onbeforeunload = () => "El cartón está en uso. ¿Seguro de que quieres salir?";
+    }
+  });
+
+  // Detectar gesto de deslizamiento hacia abajo (que podría causar una actualización de la página)
+  window.addEventListener('touchstart', (event) => {
+    touchStartY = event.touches[0].pageY; // Guardamos la posición Y al inicio del toque
+  });
+
+  window.addEventListener('touchmove', (event) => {
+    const touchMoveY = event.touches[0].pageY;
+
+    // Si el usuario está deslizando hacia abajo más de 50px
+    if (touchMoveY > touchStartY + 50) {
+      if (isDrawing) {
+        // Si hay cambios no guardados, mostramos una alerta y evitamos la actualización
+        event.preventDefault();
+        event.stopPropagation();  // Detenemos el evento de actualización
+        const confirmUpdate = confirm("Hay un cartón en uso. ¿Quieres actualizar la página?");
+        
+        if (confirmUpdate) {
+          location.reload(); // Recargar la página si el usuario acepta
+        }
+      }
+    }
+  });
+
+  // También manejamos la advertencia para la actualización en el caso de que se intente salir de la página
+  window.addEventListener("beforeunload", (event) => {
+    if (isDrawing) {
+      // Si el usuario tiene cambios no guardados, muestra un mensaje de confirmación
+      event.preventDefault();
+      event.returnValue = "El cartón está en uso. ¿Seguro de que quieres salir?";
+    }
+  });
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let drawing = false;

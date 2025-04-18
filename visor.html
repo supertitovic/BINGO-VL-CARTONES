@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marcar cartón Bingo VL</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f4f4f4;
+    }
+    #toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      flex-wrap: wrap;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      justify-content: center;
+    }
+    canvas {
+      touch-action: none;
+      background: #fff;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+    }
+    button, select, input[type="color"], input[type="file"] {
+      padding: 5px 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <label>Color: <input type="color" id="colorPicker" value="#ff0000"></label>
+    <label>Grosor:
+      <input type="range" id="brushSizeSlider" min="5" max="300" value="5" step="1">
+      <span id="brushSizeValue">5px</span>
+    </label>
+    <label>Opacidad:
+      <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
+    </label>
+    <button onclick="undo()">↩ Deshacer</button>
+    <button onclick="redo()">↪ Rehacer</button>
+    <button onclick="save()">💾 Guardar</button>
+    <label>
+      <input type="file" id="fileInput" accept="image/*" style="display:none;">
+      <button onclick="document.getElementById('fileInput').click()">📁 Cargar</button>
+    </label>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let paths = [];
+    let redoStack = [];
+    let currentPath = [];
+    let color = document.getElementById("colorPicker").value;
+    let size = +document.getElementById("brushSizeSlider").value;
+    let opacity = +document.getElementById("opacityRange").value;
+    let baseImage = new Image();
+    let imageWidth, imageHeight, scale;
+
+    function resizeCanvasToFit(img) {
+      const maxWidth = window.innerWidth * 0.95;
+      const maxHeight = window.innerHeight * 0.85;
+      const scaleWidth = maxWidth / img.width;
+      const scaleHeight = maxHeight / img.height;
+      scale = Math.min(scaleWidth, scaleHeight);
+      imageWidth = img.width * scale;
+      imageHeight = img.height * scale;
+      canvas.width = imageWidth;
+      canvas.height = imageHeight;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.drawImage(img, 0, 0);
+    }
+
+    function loadImageFromURL(src) {
+      baseImage = new Image();
+      baseImage.crossOrigin = "anonymous";
+      baseImage.onload = () => {
+        resizeCanvasToFit(baseImage);
+        paths = [];
+        redoStack = [];
+      };
+      baseImage.onerror = () => alert("Error al cargar la imagen.");
+      baseImage.src = src;
+    }
+
+    function loadImageFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        baseImage = new Image();
+        baseImage.onload = () => {
+          resizeCanvasToFit(baseImage);
+          paths = [];
+          redoStack = [];
+        };
+        baseImage.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+      if (e.target.files.length > 0) {
+        loadImageFromFile(e.target.files[0]);
+      }
+    });
+
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / scale;
+      const y = (e.clientY - rect.top) / scale;
+      return { x, y };
+    }
+
+    function drawDot(x, y) {
+      ctx.beginPath();
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle = color;
+      ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+      paths.push([{ x, y, color, size, opacity }]);
+      redraw();
+      redoStack = [];
+    }
+
+    canvas.addEventListener("click", e => {
+      const { x, y } = getMousePos(e);
+      drawDot(x, y);
+    });
+
+    canvas.addEventListener("touchstart", e => {
+      const { x, y } = getMousePos(e.touches[0]);
+      drawDot(x, y);
+      e.preventDefault();
+    });
+
+    function redraw() {
+      if (!baseImage.src) return;
+      resizeCanvasToFit(baseImage);
+      for (const path of paths) {
+        const point = path[0];
+        ctx.beginPath();
+        ctx.globalAlpha = point.opacity ?? 1;
+        ctx.fillStyle = point.color;
+        ctx.arc(point.x, point.y, point.size / 2, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+    }
+
+    function undo() {
+      if (paths.length > 0) {
+        const lastPath = paths.pop();
+        redoStack.push(lastPath);
+        redraw();
+      }
+    }
+
+    function redo() {
+      if (redoStack.length > 0) {
+        const pathToRedo = redoStack.pop();
+        paths.push(pathToRedo);
+        redraw();
+      }
+    }
+
+    function save() {
+      const link = document.createElement("a");
+      link.download = "Bingo_VL_carton_marcado.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    document.getElementById("colorPicker").oninput = e => color = e.target.value;
+    document.getElementById("brushSizeSlider").oninput = e => {
+      size = +e.target.value;
+      document.getElementById("brushSizeValue").textContent = `${size}px`;
+    };
+    document.getElementById("opacityRange").oninput = e => opacity = +e.target.value;
+
+    window.addEventListener("resize", () => {
+      if (baseImage.src) {
+        resizeCanvasToFit(baseImage);
+        redraw();
+      }
+    });
+
+    const paramCarton = new URLSearchParams(window.location.search).get("carton");
+    if (paramCarton) loadImageFromURL(paramCarton);
+  </script>
+</body>
+</html>

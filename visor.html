@@ -260,8 +260,10 @@
       if (isDrawing) return;
       if (touch.clientY - touchStartY > 100) {
         isDrawing = true;
-        alert("¿Actualizar?");
-        window.location.reload();
+        const confirmUpdate = confirm("¿Actualizar la página? Los cambios se perderán.");
+        if (confirmUpdate) {
+          window.location.reload();
+        }
       }
     }
 

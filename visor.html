@@ -39,15 +39,20 @@
   <div id="toolbar">
     <label><input type="color" id="colorPicker" value="#ff0000"></label>
     <label>
-      <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
+      <input type="range" id="brushSizeSlider" min="5" max="300" value=120" step="5">
       <span id="brushSizeValue">120px</span>
     </label>
-    <label>Alpha:
+    <label>Trans.:
       <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
     </label>
     <button onclick="undo()">↩</button>
     <button onclick="redo()">↪</button>
     <button onclick="save()">💾</button>
+    <label>
+  <button onclick="toggleDropdown()">🔢</button>
+  <select id="cartonDropdown" onchange="loadSelectedCarton()" style="display:none;"></select>
+</label>
+
     <label>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
       <button onclick="document.getElementById('fileInput').click()">📁</button>
@@ -198,6 +203,60 @@
 
     const paramCarton = new URLSearchParams(window.location.search).get("carton");
     if (paramCarton) loadImageFromURL(paramCarton);
+    
+  function toggleDropdown() {
+    const dropdown = document.getElementById("cartonDropdown");
+    dropdown.style.display = dropdown.style.display === "none" ? "inline-block" : "none";
+  }
+
+  function loadSelectedCarton() {
+    const select = document.getElementById("cartonDropdown");
+    const selectedUrl = select.value;
+    if (selectedUrl) loadImageFromURL(selectedUrl);
+  }
+
+  fetch("cartones/list.json")
+    .then(response => response.json())
+    .then(files => {
+      const dropdown = document.getElementById("cartonDropdown");
+      dropdown.innerHTML = "";
+
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "Selecciona un cartón...";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      dropdown.appendChild(placeholder);
+
+      if (files.length > 0) {
+        files.forEach(file => {
+          const nameWithoutExt = file.replace(/\.[^/.]+$/, "");
+          const parts = nameWithoutExt.split("-");
+          const lastPart = parts[parts.length - 1];
+          const option = document.createElement("option");
+          option.value = `cartones/${file}`;
+          option.textContent = lastPart;
+          dropdown.appendChild(option);
+        });
+      } else {
+        // Si no hay archivos, mantén el placeholder visible
+        const noFilesOption = document.createElement("option");
+        noFilesOption.textContent = "No hay cartones disponibles";
+        noFilesOption.disabled = true;
+        dropdown.appendChild(noFilesOption);
+      }
+    })
+    .catch(err => {
+      console.error("No se pudo cargar list.json", err);
+      // Si hay error en la carga de list.json, también mostrar un mensaje
+      const dropdown = document.getElementById("cartonDropdown");
+      dropdown.innerHTML = ""; // Limpiar dropdown
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "No hay cartones válidos";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      dropdown.appendChild(placeholder);
+    });
+
   </script>
 </body>
 </html>

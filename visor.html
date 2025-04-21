@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marcar cartón Bingo VL</title>
+    <title>Jugar cartón Bingo VL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       html { height: 100%; }
@@ -228,7 +228,7 @@
       // --- FIN populateCartonDropdown MODIFICADO ---
 
 
-	// --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged Y LIMPIA EL CANVAS)
+		// --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged Y LIMPIA EL CANVAS ANTES DE CARGAR)
       function loadCarton(cartonName) {
           const cartonPath = `cartones/${cartonName}`;
           baseImage = new Image();
@@ -240,7 +240,7 @@
               const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
               currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
               paths = []; redoStack = []; isChanged = false; // Resetear cambios
-              clearCanvas(); // *** AÑADIDO: Limpiar el canvas al cargar un nuevo cartón ***
+              // clearCanvas(); // *** ELIMINADO DE AQUÍ ***
           };
           baseImage.onerror = function() {
               console.error("Error al cargar la imagen del cartón:", cartonPath);
@@ -248,10 +248,11 @@
               isImageLoaded = false; resizeCanvas();
               currentCartonDisplay.textContent = ''; // Vaciar texto en error
               isChanged = false; // Resetear cambios
-              clearCanvas(); // *** AÑADIDO: Limpiar el canvas en caso de error de carga ***
+              clearCanvas(); // *** SE MANTIENE AQUÍ PARA LIMPIAR EN CASO DE ERROR ***
           };
           isImageLoaded = false; imageWidth = 0; imageHeight = 0;
           currentCartonDisplay.textContent = '...'; // Indicar carga brevemente
+          clearCanvas(); // *** AÑADIDO: Limpiar el canvas ANTES de cargar la nueva imagen ***
           baseImage.src = cartonPath;
       }
       // --- FIN loadCarton MODIFICADO ---

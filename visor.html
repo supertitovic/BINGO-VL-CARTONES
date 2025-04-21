@@ -2,40 +2,96 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marcar cartón Bingo VL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
+  <title>Visor de Cartones de Bingo</title>
   <style>
+    /* Estilos generales */
     body {
       margin: 0;
-      font-family: sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #f4f4f4;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333;
+      overflow: hidden;
     }
+
+    /* Barra de herramientas */
     #toolbar {
       display: flex;
       gap: 10px;
       padding: 10px;
       flex-wrap: wrap;
       background: #fff;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid #ddd;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       justify-content: center;
+      position: relative;
+      z-index: 10;
     }
+
+    #toolbar button,
+    #toolbar select,
+    #toolbar input[type="color"],
+    #toolbar input[type="range"] {
+      padding: 8px 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #toolbar button:hover {
+      background: #e0e0e0;
+    }
+
+    #toolbar input[type="color"] {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    #toolbar input[type="range"] {
+      width: 100px;
+    }
+
+    /* Canvas */
     canvas {
       touch-action: none;
       background: #fff;
       max-width: 100%;
       height: auto;
       border: 1px solid #ccc;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    button, select, input[type="color"], input[type="file"] {
-      padding: 5px 10px;
-      font-size: 16px;
+
+    /* Pantalla completa */
+    .fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 999;
+      background: #fff;
+    }
+
+    /* Animaciones */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
     }
   </style>
 </head>
 <body>
+  <!-- Barra de herramientas -->
   <div id="toolbar">
     <label><input type="color" id="colorPicker" value="#ff0000"></label>
     <label>
@@ -48,17 +104,22 @@
     <button onclick="undo()">↩</button>
     <button onclick="redo()">↪</button>
     <button onclick="save()">💾</button>
-    <label> 
-      <button onclick="toggleDropdown()">🔢</button> 
+    <label>
+      <button onclick="toggleDropdown()">🔢</button>
       <select id="cartonDropdown" onchange="loadSelectedCarton()" style="display:none;"></select>
     </label>
     <label>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
       <button onclick="document.getElementById('fileInput').click()">📁</button>
     </label>
+    <button onclick="toggleFullscreen()">⛶</button>
   </div>
+
+  <!-- Canvas -->
   <canvas id="canvas"></canvas>
+
   <script>
+    // Variables globales
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let drawing = false;
@@ -70,215 +131,153 @@
     let opacity = +document.getElementById("opacityRange").value;
     let baseImage = new Image();
     let imageWidth, imageHeight, scale;
-    let isChanged = false;  // Flag to track if the canvas has been modified
+    let isChanged = false;
 
-    function resizeCanvasToFit(img) {
-      const maxWidth = window.innerWidth * 0.95;
-      const maxHeight = window.innerHeight * 0.85;
-      const scaleWidth = maxWidth / img.width;
-      const scaleHeight = maxHeight / img.height;
-      scale = Math.min(scaleWidth, scaleHeight);
-      imageWidth = img.width * scale;
-      imageHeight = img.height * scale;
-      canvas.width = imageWidth;
-      canvas.height = imageHeight;
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.drawImage(img, 0, 0);
+    // Configuración inicial del canvas
+    function setupCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - document.getElementById("toolbar").offsetHeight;
+      canvas.addEventListener("mousedown", startDrawing);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", stopDrawing);
+      canvas.addEventListener("mouseout", stopDrawing);
+      canvas.addEventListener("touchstart", startDrawing);
+      canvas.addEventListener("touchmove", draw);
+      canvas.addEventListener("touchend", stopDrawing);
+
+      // Cargar imágenes desde JSON
+      fetch('cartones/list.json')
+        .then(response => response.json())
+        .then(data => {
+          const dropdown = document.getElementById("cartonDropdown");
+          data.forEach(filename => {
+            const option = document.createElement("option");
+            option.value = filename;
+            option.textContent = filename.split('-').pop().split('.')[0];
+            dropdown.appendChild(option);
+          });
+        });
     }
 
-    function loadImageFromURL(src) {
-      baseImage = new Image();
-      baseImage.crossOrigin = "anonymous";
-      baseImage.onload = () => {
-        resizeCanvasToFit(baseImage);
-        paths = [];
-        redoStack = [];
-        isChanged = false;  // Reset the change flag when a new image is loaded
-      };
-      baseImage.onerror = () => alert("Error al cargar la imagen.");
-      baseImage.src = src;
+    // Funciones de dibujo
+    function startDrawing(e) {
+      drawing = true;
+      currentPath = [];
+      paths.push(currentPath);
+      draw(e);
     }
 
-    function loadImageFromFile(file) {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        baseImage = new Image();
-        baseImage.onload = () => {
-          resizeCanvasToFit(baseImage);
-          paths = [];
-          redoStack = [];
-          isChanged = false;  // Reset the change flag when a new image is loaded
-        };
-        baseImage.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+    function draw(e) {
+      if (!drawing) return;
 
-    document.getElementById("fileInput").addEventListener("change", function(e) {
-      if (e.target.files.length > 0) {
-        loadImageFromFile(e.target.files[0]);
-        isChanged = true;  // Mark as changed when a new file is loaded
-      }
-    });
-
-    function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / scale;
-      const y = (e.clientY - rect.top) / scale;
-      return { x, y };
-    }
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-    function drawDot(x, y) {
-      ctx.beginPath();
       ctx.globalAlpha = opacity;
-      ctx.fillStyle = color;
-      ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
-      paths.push([{ x, y, color, size, opacity }]);
-      redraw();
-      redoStack = [];
-      isChanged = true;  // Mark as changed when the user draws
-    }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.lineCap = "round";
 
-    canvas.addEventListener("click", e => {
-      const { x, y } = getMousePos(e);
-      drawDot(x, y);
-    });
-
-    canvas.addEventListener("touchstart", e => {
-      const { x, y } = getMousePos(e.touches[0]);
-      drawDot(x, y);
-      e.preventDefault();
-    });
-
-    function redraw() {
-      if (!baseImage.src) return;
-      resizeCanvasToFit(baseImage);
-      for (const path of paths) {
-        const point = path[0];
+      if (currentPath.length === 0) {
         ctx.beginPath();
-        ctx.globalAlpha = point.opacity ?? 1;
-        ctx.fillStyle = point.color;
-        ctx.arc(point.x, point.y, point.size / 2, 0, 2 * Math.PI);
-        ctx.fill();
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+        ctx.stroke();
       }
-      ctx.globalAlpha = 1.0;
+
+      currentPath.push({ x, y });
     }
 
+    function stopDrawing() {
+      drawing = false;
+      ctx.closePath();
+    }
+
+    // Deshacer y rehacer
     function undo() {
       if (paths.length > 0) {
-        const lastPath = paths.pop();
-        redoStack.push(lastPath);
-        redraw();
-        isChanged = true;  // Mark as changed after undo
+        redoStack.push(paths.pop());
+        redrawCanvas();
       }
     }
 
     function redo() {
       if (redoStack.length > 0) {
-        const pathToRedo = redoStack.pop();
-        paths.push(pathToRedo);
-        redraw();
-        isChanged = true;  // Mark as changed after redo
+        paths.push(redoStack.pop());
+        redrawCanvas();
       }
     }
 
-function save() {
-  // Mostrar un cuadro de confirmación antes de guardar
-  const confirmSave = window.confirm("¿Guardar el cartón marcado?");
-  
-  if (confirmSave) {
-    const link = document.createElement("a");
-    link.download = "Bingo_VL_carton_marcado.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  }
-}
+    function redrawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      paths.forEach(path => {
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        path.forEach(point => ctx.lineTo(point.x, point.y));
+        ctx.stroke();
+      });
+    }
 
-    document.getElementById("colorPicker").oninput = e => color = e.target.value;
-    document.getElementById("brushSizeSlider").oninput = e => {
-      size = +e.target.value;
-      document.getElementById("brushSizeValue").textContent = `${size}px`;
-    };
-    document.getElementById("opacityRange").oninput = e => opacity = +e.target.value;
+    // Guardar imagen
+    function save() {
+      const link = document.createElement("a");
+      link.download = "carton-bingo.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
 
+    // Cargar cartón seleccionado
+    function loadSelectedCarton() {
+      const dropdown = document.getElementById("cartonDropdown");
+      const selectedFile = dropdown.value;
+      if (selectedFile) {
+        baseImage.src = `cartones/${selectedFile}`;
+        baseImage.onload = () => {
+          scale = Math.min(canvas.width / baseImage.width, canvas.height / baseImage.height);
+          imageWidth = baseImage.width * scale;
+          imageHeight = baseImage.height * scale;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(baseImage, (canvas.width - imageWidth) / 2, (canvas.height - imageHeight) / 2, imageWidth, imageHeight);
+        };
+      }
+    }
+
+    // Alternar lista de cartones
+    function toggleDropdown() {
+      const dropdown = document.getElementById("cartonDropdown");
+      dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+    }
+
+    // Modo pantalla completa
+    function toggleFullscreen() {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => console.error(`Error al entrar en pantalla completa: ${err.message}`));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Eventos de redimensionamiento
     window.addEventListener("resize", () => {
+      setupCanvas();
       if (baseImage.src) {
-        resizeCanvasToFit(baseImage);
-        redraw();
+        loadSelectedCarton();
       }
     });
 
-    // Verificar si hay un cartón en los parámetros de la URL al cargar la página
-    const urlParams = new URLSearchParams(window.location.search);
-    const cartonParam = urlParams.get("carton");
-    if (cartonParam) {
-      loadImageFromURL(cartonParam);
-    }
+    // Inicialización
+    setupCanvas();
 
-    function toggleDropdown() {
-      const dropdown = document.getElementById("cartonDropdown");
-      dropdown.style.display = dropdown.style.display === "none" ? "inline-block" : "none";
-    }
-
-    function loadSelectedCarton() {
-      const select = document.getElementById("cartonDropdown");
-      const selectedUrl = select.value;
-      if (selectedUrl) {
-        // Actualizar la URL con el cartón seleccionado
-        window.history.replaceState({}, "", `?carton=${selectedUrl}`);
-        loadImageFromURL(selectedUrl);
-        isChanged = false;  // Mark as no changes after loading new carton
-      }
-    }
-
-    fetch("cartones/list.json")
-      .then(response => response.json())
-      .then(files => {
-        const dropdown = document.getElementById("cartonDropdown");
-        dropdown.innerHTML = "";
-        const placeholder = document.createElement("option");
-        placeholder.textContent = "Selecciona un cartón...";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        dropdown.appendChild(placeholder);
-        if (files.length > 0) {
-          files.forEach(file => {
-            const nameWithoutExt = file.replace(/\.[^/.]+$/, "");
-            const parts = nameWithoutExt.split("-");
-            const lastPart = parts[parts.length - 1];
-            const option = document.createElement("option");
-            option.value = `cartones/${file}`;
-            option.textContent = lastPart;
-            dropdown.appendChild(option);
-          });
-        } else {
-          const noFilesOption = document.createElement("option");
-          noFilesOption.textContent = "No hay cartones disponibles";
-          noFilesOption.disabled = true;
-          dropdown.appendChild(noFilesOption);
-        }
-      })
-      .catch(err => {
-        console.error("No se pudo cargar list.json", err);
-        const dropdown = document.getElementById("cartonDropdown");
-        dropdown.innerHTML = "";
-        const placeholder = document.createElement("option");
-        placeholder.textContent = "No hay cartones válidos";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        dropdown.appendChild(placeholder);
-      });
-
-    // Confirmación de actualización
-    window.onbeforeunload = function (e) {
-      if (isChanged) {
-        const message = "¿Estás seguro de que quieres salir? Perderás los cambios.";
-        e.returnValue = message; // Para navegadores antiguos
-        return message; // Para navegadores modernos
-      }
-    };
+    // Actualizar valores en tiempo real
+    document.getElementById("colorPicker").addEventListener("input", e => color = e.target.value);
+    document.getElementById("brushSizeSlider").addEventListener("input", e => {
+      size = +e.target.value;
+      document.getElementById("brushSizeValue").textContent = `${size}px`;
+    });
+    document.getElementById("opacityRange").addEventListener("input", e => opacity = +e.target.value);
   </script>
 </body>
 </html>

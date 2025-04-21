@@ -228,7 +228,7 @@
       // --- FIN populateCartonDropdown MODIFICADO ---
 
 
-		// --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged Y LIMPIA EL CANVAS ANTES DE CARGAR)
+      // --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged, LIMPIA EL CANVAS Y LOS PATHS)
       function loadCarton(cartonName) {
           const cartonPath = `cartones/${cartonName}`;
           baseImage = new Image();
@@ -240,7 +240,7 @@
               const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
               currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
               paths = []; redoStack = []; isChanged = false; // Resetear cambios
-              // clearCanvas(); // *** ELIMINADO DE AQUÍ ***
+              clearCanvas();
           };
           baseImage.onerror = function() {
               console.error("Error al cargar la imagen del cartón:", cartonPath);
@@ -248,11 +248,13 @@
               isImageLoaded = false; resizeCanvas();
               currentCartonDisplay.textContent = ''; // Vaciar texto en error
               isChanged = false; // Resetear cambios
-              clearCanvas(); // *** SE MANTIENE AQUÍ PARA LIMPIAR EN CASO DE ERROR ***
+              clearCanvas();
+              paths = []; redoStack = []; // Asegurar limpieza en caso de error también
           };
           isImageLoaded = false; imageWidth = 0; imageHeight = 0;
           currentCartonDisplay.textContent = '...'; // Indicar carga brevemente
-          clearCanvas(); // *** AÑADIDO: Limpiar el canvas ANTES de cargar la nueva imagen ***
+          clearCanvas();
+          paths = []; // *** AÑADIDO CRUCIAL: Limpiar el array de paths al iniciar la carga ***
           baseImage.src = cartonPath;
       }
       // --- FIN loadCarton MODIFICADO ---

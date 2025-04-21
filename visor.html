@@ -290,14 +290,59 @@
       // --- FIN loadImageFromFile MODIFICADO ---
 
 
-      // --- save --- (Resetea isChanged)
+      // --- save --- (Resetea isChanged Y COMBINA DIBUJOS CON LA IMAGEN BASE)
       function save() {
-          if (!isImageLoaded) { alert("No hay cartón cargado para guardar."); return; }
-          // (...) Crear canvas temporal y dibujar...
-          const tempCanvas = document.createElement('canvas'); tempCanvas.width = imageWidth; tempCanvas.height = imageHeight; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
-           for (const path of paths) { if (path.points.length > 1) { /*...*/ tempCtx.stroke();} for (const dot of path.dots) { /*...*/ tempCtx.fill();} }
-          // (...) Generar nombre y descargar...
-          const link = document.createElement('a'); let filenameSuffix = 'carton'; const txt = currentCartonDisplay.textContent; if (txt.startsWith('#')) filenameSuffix = txt.substring(1); else if (txt === 'Pers.') filenameSuffix = 'personalizado'; link.download = `bingo-${filenameSuffix}-marcado.png`; link.href = tempCanvas.toDataURL('image/png'); link.click();
+          if (!isImageLoaded) {
+              alert("No hay cartón cargado para guardar.");
+              return;
+          }
+
+          // Crear un canvas temporal del tamaño de la imagen original
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = imageWidth;
+          tempCanvas.height = imageHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+
+          // Dibujar la imagen base en el canvas temporal
+          tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+
+          // Dibujar los trazos guardados en el canvas temporal, sin escalar
+          for (const path of paths) {
+              if (path.points.length > 1) {
+                  tempCtx.beginPath();
+                  tempCtx.moveTo(path.points[0].x, path.points[0].y);
+                  for (let i = 1; i < path.points.length; i++) {
+                      tempCtx.lineTo(path.points[i].x, path.points[i].y);
+                  }
+                  tempCtx.strokeStyle = path.points[0].color;
+                  tempCtx.lineWidth = path.points[0].size;
+                  tempCtx.lineCap = "round";
+                  tempCtx.lineJoin = "round";
+                  tempCtx.globalAlpha = path.points[0].opacity;
+                  tempCtx.stroke();
+              }
+              for (const dot of path.dots) {
+                  tempCtx.beginPath();
+                  tempCtx.arc(dot.x, dot.y, dot.size / 2, 0, Math.PI * 2);
+                  tempCtx.fillStyle = dot.color;
+                  tempCtx.globalAlpha = dot.opacity;
+                  tempCtx.fill();
+              }
+          }
+
+          // Generar nombre y descargar la imagen combinada
+          const link = document.createElement('a');
+          let filenameSuffix = 'carton';
+          const txt = currentCartonDisplay.textContent;
+          if (txt.startsWith('#')) {
+              filenameSuffix = txt.substring(1);
+          } else if (txt === 'Pers.') {
+              filenameSuffix = 'personalizado';
+          }
+          link.download = `bingo-${filenameSuffix}-marcado.png`;
+          link.href = tempCanvas.toDataURL('image/png');
+          link.click();
+
           isChanged = false; // Resetear al guardar
       }
 

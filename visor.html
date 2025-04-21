@@ -3,80 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Canvas con Herramientas</title>
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <title>Editor de Cartones</title>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-rp2fGZ+MZ4M4j5ujb4nV6yVzY7vX9zOdfFTzQFYdKtMQJ0UOPDULtxM6s95TKQ6U6DAEhrJ12rJ0B1+0Y5fZfg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     body {
-      font-family: sans-serif;
       margin: 0;
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #f9f9f9;
     }
-
-    canvas {
-      border: 1px solid #ccc;
-      margin-top: 10px;
-      cursor: crosshair;
-    }
-
-    .tools {
-      margin-top: 10px;
+    #toolbar {
+      margin: 10px;
       display: flex;
       gap: 10px;
       align-items: center;
       flex-wrap: wrap;
     }
-
-    .tools input[type="color"],
-    .tools input[type="range"] {
-      height: 30px;
+    #toolbar input[type="color"],
+    #toolbar input[type="range"],
+    #toolbar button,
+    #toolbar select {
+      padding: 4px;
     }
-
-    .tools button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 12px;
+    canvas {
+      border: 1px solid black;
+      touch-action: none;
+    }
+    .icon-button {
+      font-size: 18px;
+      padding: 6px 10px;
       cursor: pointer;
-      font-size: 16px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .tools button:hover {
-      background: #0056b3;
-    }
-
-    .tools label {
-      font-weight: bold;
-    }
-
-    input[type="file"] {
-      display: none;
+      border: none;
+      background: none;
     }
   </style>
 </head>
 <body>
-  <h2>Dibujo en Canvas</h2>
-  <canvas id="canvas" width="800" height="600"></canvas>
-  <div class="tools">
-    <label for="colorPicker">Color:</label>
-    <input type="color" id="colorPicker" value="#000000" />
-
-    <label for="brushSize">Tamaño:</label>
-    <input type="range" id="brushSize" min="1" max="50" value="5" />
-
-    <button id="clearBtn" title="Borrar"><i class="fas fa-eraser"></i> Borrar</button>
-    
-    <label for="imageLoader" class="custom-file-upload" title="Cargar Imagen">
-      <button><i class="fas fa-image"></i> Imagen</button>
-    </label>
-    <input type="file" id="imageLoader" name="imageLoader" accept="image/*" />
+  <div id="toolbar">
+    <!-- Íconos de FontAwesome importados de la segunda versión -->
+    <button id="pencilBtn" class="icon-button" title="Lápiz">
+      <i class="fas fa-pencil-alt"></i>
+    </button>
+    <button id="eraserBtn" class="icon-button" title="Goma">
+      <i class="fas fa-eraser"></i>
+    </button>
+    <button id="undoBtn" class="icon-button" title="Deshacer">
+      <i class="fas fa-undo"></i>
+    </button>
+    <button id="redoBtn" class="icon-button" title="Rehacer">
+      <i class="fas fa-redo"></i>
+    </button>
+    <button id="clearBtn" class="icon-button" title="Limpiar">
+      <i class="fas fa-trash-alt"></i>
+    </button>
+    <!-- Fin de los íconos -->
   </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
 
   <script>
     const canvas = document.getElementById("canvas");

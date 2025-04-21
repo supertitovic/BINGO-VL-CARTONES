@@ -2,10 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Editor de Cartones</title>
-  <!-- FontAwesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-rp2fGZ+MZ4M4j5ujb4nV6yVzY7vX9zOdfFTzQFYdKtMQJ0UOPDULtxM6s95TKQ6U6DAEhrJ12rJ0B1+0Y5fZfg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marcar cartón Bingo VL</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
       margin: 0;
@@ -13,121 +12,606 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      background: #f4f4f4;
+      height: 100vh;
+      overflow: hidden;
     }
+    
+    #app-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+    
     #toolbar {
-      margin: 10px;
       display: flex;
       gap: 10px;
-      align-items: center;
+      padding: 10px;
       flex-wrap: wrap;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      justify-content: center;
+      align-items: center;
     }
-    #toolbar input[type="color"],
-    #toolbar input[type="range"],
-    #toolbar button,
-    #toolbar select {
-      padding: 4px;
+    
+    .tool-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
-    canvas {
-      border: 1px solid black;
-      touch-action: none;
-    }
-    .icon-button {
-      font-size: 18px;
-      padding: 6px 10px;
-      cursor: pointer;
+    
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
       border: none;
-      background: none;
+      background: #e3f2fd;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    button:hover {
+      background: #bbdefb;
+    }
+    
+    button i {
+      font-size: 18px;
+    }
+    
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+      padding: 10px;
+    }
+    
+    canvas {
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    input[type="color"] {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      padding: 0;
+    }
+    
+    input[type="range"] {
+      width: 100px;
+    }
+    
+    #cartonDropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+    
+    #carton-dropdown {
+      position: relative;
+    }
+    
+    #cartonDropdown.show {
+      display: block;
+    }
+    
+    #current-carton {
+      font-weight: bold;
+      margin-left: 5px;
     }
   </style>
 </head>
 <body>
-  <div id="toolbar">
-    <!-- Íconos de FontAwesome importados de la segunda versión -->
-    <button id="pencilBtn" class="icon-button" title="Lápiz">
-      <i class="fas fa-pencil-alt"></i>
-    </button>
-    <button id="eraserBtn" class="icon-button" title="Goma">
-      <i class="fas fa-eraser"></i>
-    </button>
-    <button id="undoBtn" class="icon-button" title="Deshacer">
-      <i class="fas fa-undo"></i>
-    </button>
-    <button id="redoBtn" class="icon-button" title="Rehacer">
-      <i class="fas fa-redo"></i>
-    </button>
-    <button id="clearBtn" class="icon-button" title="Limpiar">
-      <i class="fas fa-trash-alt"></i>
-    </button>
-    <!-- Fin de los íconos -->
+  <div id="app-container">
+    <div id="toolbar">
+      <div class="tool-group">
+        <label title="Color del marcador">
+          <i class="fas fa-palette"></i>
+          <input type="color" id="colorPicker" value="#ff0000">
+        </label>
+      </div>
+      
+      <div class="tool-group">
+        <label title="Tamaño del marcador">
+          <i class="fas fa-brush"></i>
+          <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
+          <span id="brushSizeValue">120px</span>
+        </label>
+      </div>
+      
+      <div class="tool-group">
+        <label title="Transparencia">
+          <i class="fas fa-adjust"></i>
+          <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
+        </label>
+      </div>
+      
+      <div class="tool-group">
+        <button onclick="undo()" title="Deshacer">
+          <i class="fas fa-undo"></i>
+        </button>
+        <button onclick="redo()" title="Rehacer">
+          <i class="fas fa-redo"></i>
+        </button>
+      </div>
+      
+      <div class="tool-group">
+        <button onclick="save()" title="Guardar">
+          <i class="fas fa-save"></i>
+        </button>
+      </div>
+      
+      <div class="tool-group" id="carton-dropdown">
+        <button onclick="toggleDropdown()" title="Seleccionar cartón">
+          <i class="fas fa-list-ol"></i>
+          <span id="current-carton">Cartón</span>
+        </button>
+        <select id="cartonDropdown" onchange="loadSelectedCarton()"></select>
+      </div>
+      
+      <div class="tool-group">
+        <button onclick="document.getElementById('fileInput').click()" title="Cargar imagen">
+          <i class="fas fa-folder-open"></i>
+        </button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">
+      </div>
+      
+      <div class="tool-group">
+        <button onclick="toggleFullscreen()" title="Pantalla completa">
+          <i class="fas fa-expand"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
-  <canvas id="canvas"></canvas>
-
   <script>
-
-  <script>
+    // Elementos del DOM
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    let painting = false;
-    let brushColor = document.getElementById("colorPicker").value;
-    let brushSize = document.getElementById("brushSize").value;
+    const colorPicker = document.getElementById("colorPicker");
+    const brushSizeSlider = document.getElementById("brushSizeSlider");
+    const brushSizeValue = document.getElementById("brushSizeValue");
+    const opacityRange = document.getElementById("opacityRange");
+    const cartonDropdown = document.getElementById("cartonDropdown");
+    const currentCartonDisplay = document.getElementById("current-carton");
+    const fileInput = document.getElementById("fileInput");
+    const canvasContainer = document.getElementById("canvas-container");
 
-    function startPosition(e) {
-      painting = true;
-      draw(e);
+    // Variables de estado
+    let drawing = false;
+    let paths = [];
+    let redoStack = [];
+    let currentPath = null;
+    let color = colorPicker.value;
+    let size = +brushSizeSlider.value;
+    let opacity = +opacityRange.value;
+    let baseImage = new Image();
+    let imageWidth, imageHeight;
+    let isChanged = false;
+    let cartones = [];
+    let scale = 1;
+
+    // Inicialización
+    init();
+
+    async function init() {
+      setupEventListeners();
+      await loadCartonesList();
+      
+      if (cartones.length > 0) {
+        loadCarton(cartones[0]);
+      }
+      
+      updateBrushSizeDisplay();
+      
+      // Evento para redimensionamiento al cambiar pantalla completa
+      document.addEventListener('fullscreenchange', resizeCanvas);
     }
 
-    function endPosition() {
-      painting = false;
-      ctx.beginPath();
+    function setupEventListeners() {
+      // Eventos de dibujo
+      canvas.addEventListener("mousedown", startDrawing);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", endDrawing);
+      canvas.addEventListener("mouseout", endDrawing);
+      
+      // Eventos táctiles
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd);
+      
+      // Eventos de controles
+      colorPicker.addEventListener("input", (e) => {
+        color = e.target.value;
+      });
+      
+      brushSizeSlider.addEventListener("input", (e) => {
+        size = +e.target.value;
+        updateBrushSizeDisplay();
+      });
+      
+      opacityRange.addEventListener("input", (e) => {
+        opacity = +e.target.value;
+      });
+      
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadImageFromFile(e.target.files[0]);
+        }
+      });
+      
+      window.addEventListener("resize", debounce(resizeCanvas, 200));
+    }
+
+    // Funciones de dibujo corregidas
+    function startDrawing(e) {
+      e.preventDefault();
+      drawing = true;
+      
+      const pos = getPosition(e);
+      currentPath = {
+        points: [{
+          x: pos.x / scale,
+          y: pos.y / scale,
+          color,
+          size,
+          opacity
+        }],
+        dots: []
+      };
+      
+      // Dibujar punto inmediatamente
+      drawDot(pos.x / scale, pos.y / scale, size, color, opacity);
+      currentPath.dots.push({
+        x: pos.x / scale,
+        y: pos.y / scale,
+        size,
+        color,
+        opacity
+      });
     }
 
     function draw(e) {
-      if (!painting) return;
-
-      const rect = canvas.getBoundingClientRect();
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = brushColor;
-
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      if (!drawing || !currentPath) return;
+      e.preventDefault();
+      
+      const pos = getPosition(e);
+      currentPath.points.push({
+        x: pos.x / scale,
+        y: pos.y / scale,
+        color,
+        size,
+        opacity
+      });
+      
+      redrawCanvas();
     }
 
-    // Eventos del mouse
-    canvas.addEventListener("mousedown", startPosition);
-    canvas.addEventListener("mouseup", endPosition);
-    canvas.addEventListener("mousemove", draw);
+    function endDrawing() {
+      if (!drawing) return;
+      drawing = false;
+      
+      if (currentPath && currentPath.points.length > 0) {
+        paths.push(currentPath);
+        redoStack = [];
+        isChanged = true;
+      }
+      currentPath = null;
+    }
 
-    // Cambio de color
-    document.getElementById("colorPicker").addEventListener("input", (e) => {
-      brushColor = e.target.value;
-    });
+    function drawDot(x, y, size, color, opacity) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = opacity;
+      ctx.fill();
+      ctx.restore();
+    }
 
-    // Cambio de tamaño
-    document.getElementById("brushSize").addEventListener("input", (e) => {
-      brushSize = e.target.value;
-    });
+    function redrawCanvas() {
+      clearCanvas();
+      drawBaseImage();
+      
+      // Dibujar todos los trazos guardados
+      ctx.save();
+      ctx.scale(scale, scale);
+      
+      for (const path of paths) {
+        // Dibujar líneas
+        if (path.points.length > 1) {
+          drawPath(path.points);
+        }
+        
+        // Dibujar puntos
+        for (const dot of path.dots) {
+          drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity);
+        }
+      }
+      
+      // Dibujar trazo actual
+      if (currentPath) {
+        if (currentPath.points.length > 1) {
+          drawPath(currentPath.points);
+        }
+        
+        for (const dot of currentPath.dots) {
+          drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity);
+        }
+      }
+      
+      ctx.restore();
+    }
 
-    // Borrar canvas
-    document.getElementById("clearBtn").addEventListener("click", () => {
+    function drawPath(points) {
+      if (points.length < 1) return;
+      
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      
+      ctx.strokeStyle = points[0].color;
+      ctx.lineWidth = points[0].size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = points[0].opacity;
+      ctx.stroke();
+    }
+
+    // Funciones de imagen base
+    function drawBaseImage() {
+      if (baseImage.complete && baseImage.naturalWidth !== 0) {
+        ctx.save();
+        ctx.scale(scale, scale);
+        ctx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+        ctx.restore();
+      }
+    }
+
+    function clearCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
+    }
 
-    // Cargar imagen
-    document.getElementById("imageLoader").addEventListener("change", function (e) {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        const img = new Image();
-        img.onload = function () {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-        img.src = event.target.result;
+    function resizeCanvas() {
+      if (!baseImage.complete || baseImage.naturalWidth === 0) return;
+      
+      const container = canvasContainer;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      
+      // Calcular escala para ajustar al contenedor
+      const scaleX = containerWidth / imageWidth;
+      const scaleY = containerHeight / imageHeight;
+      scale = Math.min(scaleX, scaleY) * 0.95; // 95% para margen
+      
+      // Establecer tamaño del canvas
+      canvas.width = imageWidth * scale;
+      canvas.height = imageHeight * scale;
+      
+      redrawCanvas();
+    }
+
+    // Funciones de undo/redo corregidas
+    function undo() {
+      if (paths.length > 0) {
+        redoStack.push(paths.pop());
+        isChanged = true;
+        redrawCanvas();
+      }
+    }
+
+    function redo() {
+      if (redoStack.length > 0) {
+        paths.push(redoStack.pop());
+        isChanged = true;
+        redrawCanvas();
+      }
+    }
+
+    // Funciones de carga de cartones
+    async function loadCartonesList() {
+      try {
+        const response = await fetch('cartones/list.json');
+        if (!response.ok) throw new Error('No se pudo cargar la lista de cartones');
+        
+        cartones = await response.json();
+        populateCartonDropdown();
+      } catch (error) {
+        console.error('Error al cargar la lista de cartones:', error);
+        cartones = [];
+      }
+    }
+
+    function populateCartonDropdown() {
+      cartonDropdown.innerHTML = '';
+      
+      cartones.forEach(carton => {
+        const option = document.createElement('option');
+        const cartonNumber = carton.split('-').pop().replace('.jpg', '');
+        option.value = carton;
+        option.textContent = `Cartón ${parseInt(cartonNumber)}`;
+        cartonDropdown.appendChild(option);
+      });
+    }
+
+    function loadSelectedCarton() {
+      const selectedCarton = cartonDropdown.value;
+      if (selectedCarton) {
+        loadCarton(selectedCarton);
+        cartonDropdown.classList.remove('show');
+      }
+    }
+
+    function loadCarton(cartonName) {
+      const cartonPath = `cartones/${cartonName}`;
+      baseImage = new Image();
+      baseImage.onload = function() {
+        imageWidth = this.naturalWidth;
+        imageHeight = this.naturalHeight;
+        resizeCanvas();
+        
+        const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
+        currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
       };
-      reader.readAsDataURL(e.target.files[0]);
+      baseImage.onerror = function() {
+        console.error("Error al cargar la imagen del cartón");
+      };
+      baseImage.src = cartonPath;
+      
+      paths = [];
+      redoStack = [];
+      isChanged = false;
+    }
+
+    function loadImageFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        baseImage = new Image();
+        baseImage.onload = function() {
+          imageWidth = this.naturalWidth;
+          imageHeight = this.naturalHeight;
+          resizeCanvas();
+          currentCartonDisplay.textContent = "Personalizado";
+        };
+        baseImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function save() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = imageWidth;
+      tempCanvas.height = imageHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+      
+      for (const path of paths) {
+        // Dibujar líneas
+        if (path.points.length > 1) {
+          tempCtx.beginPath();
+          tempCtx.moveTo(path.points[0].x, path.points[0].y);
+          
+          for (let i = 1; i < path.points.length; i++) {
+            tempCtx.lineTo(path.points[i].x, path.points[i].y);
+          }
+          
+          tempCtx.strokeStyle = path.points[0].color;
+          tempCtx.lineWidth = path.points[0].size;
+          tempCtx.lineCap = "round";
+          tempCtx.lineJoin = "round";
+          tempCtx.globalAlpha = path.points[0].opacity;
+          tempCtx.stroke();
+        }
+        
+        // Dibujar puntos
+        for (const dot of path.dots) {
+          tempCtx.beginPath();
+          tempCtx.arc(dot.x, dot.y, dot.size / 2, 0, Math.PI * 2);
+          tempCtx.fillStyle = dot.color;
+          tempCtx.globalAlpha = dot.opacity;
+          tempCtx.fill();
+        }
+      }
+      
+      const link = document.createElement('a');
+      const cartonNumber = currentCartonDisplay.textContent.replace('#', '') || 'custom';
+      link.download = `bingo-carton-${cartonNumber}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+      
+      isChanged = false;
+    }
+
+    // Funciones de interfaz
+    function toggleDropdown() {
+      cartonDropdown.classList.toggle('show');
+    }
+
+    function updateBrushSizeDisplay() {
+      brushSizeValue.textContent = `${size}px`;
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error al intentar pantalla completa: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Manejo táctil mejorado
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent("mousedown", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      canvas.dispatchEvent(mouseEvent);
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent("mousemove", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      canvas.dispatchEvent(mouseEvent);
+    }
+
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      const mouseEvent = new MouseEvent("mouseup", {});
+      canvas.dispatchEvent(mouseEvent);
+    }
+
+    // Funciones auxiliares
+    function getPosition(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+      };
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function() {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+      };
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#carton-dropdown')) {
+        cartonDropdown.classList.remove('show');
+      }
     });
   </script>
 </body>

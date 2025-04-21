@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marcar cartón Bingo VL</title>
+    <title>Jugar cartón Bingo VL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       html { height: 100%; }
@@ -228,33 +228,37 @@
       // --- FIN populateCartonDropdown MODIFICADO ---
 
 
-      // --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged, LIMPIA EL CANVAS Y LOS PATHS)
+	// --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged, LIMPIA EL CANVAS ANTES DE CARGAR Y REDIBUJA AL CARGAR)
       function loadCarton(cartonName) {
           const cartonPath = `cartones/${cartonName}`;
           baseImage = new Image();
+
+          isImageLoaded = false;
+          imageWidth = 0;
+          imageHeight = 0;
+          currentCartonDisplay.textContent = '...'; // Indicar carga brevemente
+          clearCanvas(); // *** AÑADIDO: Limpiar el canvas justo antes de cargar ***
+          paths = []; // *** Asegurarse de limpiar los paths también ***
+          redoStack = [];
+
           baseImage.onload = function() {
-              imageWidth = this.naturalWidth; imageHeight = this.naturalHeight;
+              imageWidth = this.naturalWidth;
+              imageHeight = this.naturalHeight;
               isImageLoaded = true;
-              resizeCanvas();
+              resizeCanvas(); // Esto debería redibujar el cartón escalado
               // Poner número de cartón en el botón
               const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
               currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
-              paths = []; redoStack = []; isChanged = false; // Resetear cambios
-              clearCanvas();
           };
+
           baseImage.onerror = function() {
               console.error("Error al cargar la imagen del cartón:", cartonPath);
               alert("No se pudo cargar el cartón: " + cartonName);
-              isImageLoaded = false; resizeCanvas();
+              isImageLoaded = false;
+              resizeCanvas(); // Intentar redibujar por si acaso (aunque no haya imagen)
               currentCartonDisplay.textContent = ''; // Vaciar texto en error
-              isChanged = false; // Resetear cambios
-              clearCanvas();
-              paths = []; redoStack = []; // Asegurar limpieza en caso de error también
           };
-          isImageLoaded = false; imageWidth = 0; imageHeight = 0;
-          currentCartonDisplay.textContent = '...'; // Indicar carga brevemente
-          clearCanvas();
-          paths = []; // *** AÑADIDO CRUCIAL: Limpiar el array de paths al iniciar la carga ***
+
           baseImage.src = cartonPath;
       }
       // --- FIN loadCarton MODIFICADO ---

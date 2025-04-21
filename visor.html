@@ -2,203 +2,528 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
-  <title>Visor de Cartones de Bingo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Bingo VL - Visualizador de Cartones</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Estilos generales */
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-      color: #333;
-      overflow: hidden;
+    :root {
+      --primary-color: #4a6fa5;
+      --secondary-color: #166088;
+      --accent-color: #4fc3f7;
+      --background-color: #f5f7fa;
+      --toolbar-bg: #ffffff;
+      --button-bg: #e3f2fd;
+      --button-hover: #bbdefb;
     }
 
-    /* Barra de herramientas */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+      background: var(--background-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    #app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
     #toolbar {
       display: flex;
-      gap: 10px;
-      padding: 10px;
+      gap: 12px;
+      padding: 12px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       flex-wrap: wrap;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       justify-content: center;
-      position: relative;
+      align-items: center;
       z-index: 10;
     }
 
-    #toolbar button,
-    #toolbar select,
-    #toolbar input[type="color"],
-    #toolbar input[type="range"] {
+    .tool-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 0 8px;
+      border-right: 1px solid #e0e0e0;
+    }
+
+    .tool-group:last-child {
+      border-right: none;
+    }
+
+    button {
+      background: var(--button-bg);
+      border: none;
+      border-radius: 6px;
       padding: 8px 12px;
       font-size: 16px;
-      border: none;
-      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    #toolbar button:hover {
-      background: #e0e0e0;
+    button:hover {
+      background: var(--button-hover);
+      transform: translateY(-1px);
     }
 
-    #toolbar input[type="color"] {
+    button:active {
+      transform: translateY(0);
+    }
+
+    button i {
+      font-size: 18px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    input[type="color"] {
       width: 30px;
       height: 30px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
       padding: 0;
+      cursor: pointer;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border: none;
       border-radius: 50%;
     }
 
-    #toolbar input[type="range"] {
+    input[type="range"] {
       width: 100px;
+      cursor: pointer;
     }
 
-    /* Canvas */
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+      padding: 20px;
+      touch-action: pinch-zoom;
+    }
+
     canvas {
-      touch-action: none;
-      background: #fff;
+      background: white;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
       max-width: 100%;
-      height: auto;
-      border: 1px solid #ccc;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-height: 100%;
+      touch-action: none;
+    }
+
+    #carton-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    #cartonDropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      z-index: 100;
+      display: none;
+    }
+
+    #cartonDropdown.show {
+      display: block;
+    }
+
+    #brushSizeValue {
+      min-width: 40px;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      #toolbar {
+        padding: 8px;
+        gap: 8px;
+      }
+      
+      .tool-group {
+        padding: 0 4px;
+      }
+      
+      button {
+        padding: 6px 8px;
+        font-size: 14px;
+      }
+      
+      input[type="range"] {
+        width: 80px;
+      }
     }
 
     /* Pantalla completa */
-    .fullscreen {
-      position: fixed;
-      top: 0;
-      left: 0;
+    :fullscreen #app-container {
       width: 100vw;
       height: 100vh;
-      z-index: 999;
-      background: #fff;
-    }
-
-    /* Animaciones */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .fade-in {
-      animation: fadeIn 0.5s ease-in-out;
     }
   </style>
 </head>
 <body>
-  <!-- Barra de herramientas -->
-  <div id="toolbar">
-    <label><input type="color" id="colorPicker" value="#ff0000"></label>
-    <label>
-      <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
-      <span id="brushSizeValue">120px</span>
-    </label>
-    <label>Trans.:
-      <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
-    </label>
-    <button onclick="undo()">↩</button>
-    <button onclick="redo()">↪</button>
-    <button onclick="save()">💾</button>
-    <label>
-      <button onclick="toggleDropdown()">🔢</button>
-      <select id="cartonDropdown" onchange="loadSelectedCarton()" style="display:none;"></select>
-    </label>
-    <label>
-      <input type="file" id="fileInput" accept="image/*" style="display:none;">
-      <button onclick="document.getElementById('fileInput').click()">📁</button>
-    </label>
-    <button onclick="toggleFullscreen()">⛶</button>
+  <div id="app-container">
+    <div id="toolbar">
+      <div class="tool-group">
+        <label for="colorPicker" title="Color del marcador">
+          <i class="fas fa-palette"></i>
+          <input type="color" id="colorPicker" value="#ff0000">
+        </label>
+      </div>
+
+      <div class="tool-group">
+        <label title="Tamaño del marcador">
+          <i class="fas fa-brush"></i>
+          <div class="slider-container">
+            <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
+            <span id="brushSizeValue">120px</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="tool-group">
+        <label title="Transparencia">
+          <i class="fas fa-adjust"></i>
+          <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
+        </label>
+      </div>
+
+      <div class="tool-group">
+        <button onclick="undo()" title="Deshacer">
+          <i class="fas fa-undo"></i>
+        </button>
+        <button onclick="redo()" title="Rehacer">
+          <i class="fas fa-redo"></i>
+        </button>
+      </div>
+
+      <div class="tool-group">
+        <button onclick="save()" title="Guardar">
+          <i class="fas fa-save"></i>
+        </button>
+      </div>
+
+      <div class="tool-group" id="carton-dropdown">
+        <button onclick="toggleDropdown()" title="Seleccionar cartón">
+          <i class="fas fa-list-ol"></i>
+          <span id="current-carton">Cartón</span>
+        </button>
+        <select id="cartonDropdown" onchange="loadSelectedCarton()"></select>
+      </div>
+
+      <div class="tool-group">
+        <button onclick="document.getElementById('fileInput').click()" title="Cargar imagen">
+          <i class="fas fa-folder-open"></i>
+        </button>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+
+      <div class="tool-group">
+        <button onclick="toggleFullscreen()" title="Pantalla completa">
+          <i class="fas fa-expand"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
-  <!-- Canvas -->
-  <canvas id="canvas"></canvas>
-
   <script>
-    // Variables globales
+    // Elementos del DOM
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+    const colorPicker = document.getElementById("colorPicker");
+    const brushSizeSlider = document.getElementById("brushSizeSlider");
+    const brushSizeValue = document.getElementById("brushSizeValue");
+    const opacityRange = document.getElementById("opacityRange");
+    const cartonDropdown = document.getElementById("cartonDropdown");
+    const currentCartonDisplay = document.getElementById("current-carton");
+    const fileInput = document.getElementById("fileInput");
+    const canvasContainer = document.getElementById("canvas-container");
+
+    // Variables de estado
     let drawing = false;
     let paths = [];
     let redoStack = [];
     let currentPath = [];
-    let color = document.getElementById("colorPicker").value;
-    let size = +document.getElementById("brushSizeSlider").value;
-    let opacity = +document.getElementById("opacityRange").value;
+    let color = colorPicker.value;
+    let size = +brushSizeSlider.value;
+    let opacity = +opacityRange.value;
     let baseImage = new Image();
     let imageWidth, imageHeight, scale;
     let isChanged = false;
+    let cartones = [];
+    let touchStartDistance = 0;
+    let initialPinchDistance = 0;
+    let initialCanvasScale = 1;
+    let currentScale = 1;
+    let transformOffset = { x: 0, y: 0 };
+    let startPos = { x: 0, y: 0 };
+    let isPinching = false;
+    let isPanning = false;
 
-    // Configuración inicial del canvas
-    function setupCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight - document.getElementById("toolbar").offsetHeight;
+    // Inicialización
+    init();
+
+    async function init() {
+      // Configurar eventos
+      setupEventListeners();
+      
+      // Cargar lista de cartones
+      await loadCartonesList();
+      
+      // Cargar el primer cartón si existe
+      if (cartones.length > 0) {
+        loadCarton(cartones[0]);
+      }
+      
+      // Actualizar interfaz
+      updateBrushSizeDisplay();
+    }
+
+    function setupEventListeners() {
+      // Eventos de dibujo
       canvas.addEventListener("mousedown", startDrawing);
       canvas.addEventListener("mousemove", draw);
-      canvas.addEventListener("mouseup", stopDrawing);
-      canvas.addEventListener("mouseout", stopDrawing);
-      canvas.addEventListener("touchstart", startDrawing);
-      canvas.addEventListener("touchmove", draw);
-      canvas.addEventListener("touchend", stopDrawing);
-
-      // Cargar imágenes desde JSON
-      fetch('cartones/list.json')
-        .then(response => response.json())
-        .then(data => {
-          const dropdown = document.getElementById("cartonDropdown");
-          data.forEach(filename => {
-            const option = document.createElement("option");
-            option.value = filename;
-            option.textContent = filename.split('-').pop().split('.')[0];
-            dropdown.appendChild(option);
-          });
-        });
+      canvas.addEventListener("mouseup", endDrawing);
+      canvas.addEventListener("mouseout", endDrawing);
+      
+      // Eventos táctiles
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd);
+      
+      // Eventos de controles
+      colorPicker.addEventListener("input", (e) => {
+        color = e.target.value;
+      });
+      
+      brushSizeSlider.addEventListener("input", (e) => {
+        size = +e.target.value;
+        updateBrushSizeDisplay();
+      });
+      
+      opacityRange.addEventListener("input", (e) => {
+        opacity = +e.target.value;
+      });
+      
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadImageFromFile(e.target.files[0]);
+        }
+      });
+      
+      // Evento para redimensionar el canvas cuando cambia el tamaño de la ventana
+      window.addEventListener("resize", debounce(resizeCanvas, 200));
     }
 
     // Funciones de dibujo
     function startDrawing(e) {
+      if (isPinching) return;
+      
+      e.preventDefault();
       drawing = true;
       currentPath = [];
-      paths.push(currentPath);
-      draw(e);
+      
+      const pos = getPosition(e);
+      currentPath.push({
+        x: (pos.x - transformOffset.x) / currentScale,
+        y: (pos.y - transformOffset.y) / currentScale,
+        color,
+        size,
+        opacity
+      });
+      
+      drawDot(pos.x, pos.y);
     }
 
     function draw(e) {
+      if (!drawing || isPinching) return;
+      e.preventDefault();
+      
+      const pos = getPosition(e);
+      currentPath.push({
+        x: (pos.x - transformOffset.x) / currentScale,
+        y: (pos.y - transformOffset.y) / currentScale,
+        color,
+        size,
+        opacity
+      });
+      
+      redrawCanvas();
+    }
+
+    function endDrawing() {
       if (!drawing) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX || e.touches[0].clientX) - rect.left;
-      const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-      ctx.globalAlpha = opacity;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = size;
-      ctx.lineCap = "round";
-
-      if (currentPath.length === 0) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-        ctx.stroke();
-      }
-
-      currentPath.push({ x, y });
-    }
-
-    function stopDrawing() {
       drawing = false;
-      ctx.closePath();
+      
+      if (currentPath.length > 0) {
+        paths.push(currentPath);
+        redoStack = [];
+        isChanged = true;
+      }
     }
 
-    // Deshacer y rehacer
+    function drawDot(x, y) {
+      ctx.save();
+      ctx.translate(transformOffset.x, transformOffset.y);
+      ctx.scale(currentScale, currentScale);
+      
+      ctx.beginPath();
+      ctx.arc(
+        (x - transformOffset.x) / currentScale,
+        (y - transformOffset.y) / currentScale,
+        size / 2 / currentScale,
+        0,
+        Math.PI * 2
+      );
+      ctx.fillStyle = color;
+      ctx.globalAlpha = opacity;
+      ctx.fill();
+      
+      ctx.restore();
+    }
+
+    function redrawCanvas() {
+      clearCanvas();
+      drawBaseImage();
+      
+      // Dibujar todos los trazos guardados
+      for (const path of paths) {
+        drawPath(path);
+      }
+      
+      // Dibujar el trazo actual
+      if (currentPath.length > 1) {
+        drawPath(currentPath);
+      } else if (currentPath.length === 1) {
+        const point = currentPath[0];
+        ctx.save();
+        ctx.translate(transformOffset.x, transformOffset.y);
+        ctx.scale(currentScale, currentScale);
+        
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = point.color;
+        ctx.globalAlpha = point.opacity;
+        ctx.fill();
+        
+        ctx.restore();
+      }
+    }
+
+    function drawPath(path) {
+      if (path.length < 1) return;
+      
+      ctx.save();
+      ctx.translate(transformOffset.x, transformOffset.y);
+      ctx.scale(currentScale, currentScale);
+      
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      
+      for (let i = 1; i < path.length; i++) {
+        const point = path[i];
+        ctx.lineTo(point.x, point.y);
+      }
+      
+      ctx.strokeStyle = path[0].color;
+      ctx.lineWidth = path[0].size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = path[0].opacity;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Funciones de manipulación de imagen
+    function drawBaseImage() {
+      if (baseImage.complete && baseImage.naturalWidth !== 0) {
+        ctx.save();
+        ctx.translate(transformOffset.x, transformOffset.y);
+        ctx.scale(currentScale, currentScale);
+        ctx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+        ctx.restore();
+      }
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function resizeCanvas() {
+      if (!baseImage.complete || baseImage.naturalWidth === 0) return;
+      
+      const container = canvas.parentElement;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      
+      // Calcular escala para que la imagen quepa en el contenedor
+      const scaleX = containerWidth / imageWidth;
+      const scaleY = containerHeight / imageHeight;
+      scale = Math.min(scaleX, scaleY) * 0.9; // 90% para dejar margen
+      
+      // Establecer tamaño del canvas
+      canvas.width = imageWidth * scale;
+      canvas.height = imageHeight * scale;
+      
+      // Restablecer transformaciones
+      currentScale = 1;
+      transformOffset = { x: 0, y: 0 };
+      
+      redrawCanvas();
+    }
+
+    // Funciones de undo/redo
     function undo() {
       if (paths.length > 0) {
         redoStack.push(paths.pop());
+        isChanged = true;
         redrawCanvas();
       }
     }
@@ -206,78 +531,253 @@
     function redo() {
       if (redoStack.length > 0) {
         paths.push(redoStack.pop());
+        isChanged = true;
         redrawCanvas();
       }
     }
 
-    function redrawCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      paths.forEach(path => {
-        ctx.beginPath();
-        ctx.moveTo(path[0].x, path[0].y);
-        path.forEach(point => ctx.lineTo(point.x, point.y));
-        ctx.stroke();
+    // Funciones de carga/guardado
+    async function loadCartonesList() {
+      try {
+        const response = await fetch('cartones/list.json');
+        if (!response.ok) throw new Error('No se pudo cargar la lista de cartones');
+        
+        cartones = await response.json();
+        populateCartonDropdown();
+      } catch (error) {
+        console.error('Error al cargar la lista de cartones:', error);
+        cartones = [];
+      }
+    }
+
+    function populateCartonDropdown() {
+      cartonDropdown.innerHTML = '';
+      
+      cartones.forEach(carton => {
+        const option = document.createElement('option');
+        const cartonNumber = carton.split('-').pop().replace('.jpg', '');
+        option.value = carton;
+        option.textContent = `Cartón ${parseInt(cartonNumber)}`;
+        cartonDropdown.appendChild(option);
       });
     }
 
-    // Guardar imagen
-    function save() {
-      const link = document.createElement("a");
-      link.download = "carton-bingo.png";
-      link.href = canvas.toDataURL();
-      link.click();
-    }
-
-    // Cargar cartón seleccionado
     function loadSelectedCarton() {
-      const dropdown = document.getElementById("cartonDropdown");
-      const selectedFile = dropdown.value;
-      if (selectedFile) {
-        baseImage.src = `cartones/${selectedFile}`;
-        baseImage.onload = () => {
-          scale = Math.min(canvas.width / baseImage.width, canvas.height / baseImage.height);
-          imageWidth = baseImage.width * scale;
-          imageHeight = baseImage.height * scale;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(baseImage, (canvas.width - imageWidth) / 2, (canvas.height - imageHeight) / 2, imageWidth, imageHeight);
+      const selectedCarton = cartonDropdown.value;
+      if (selectedCarton) {
+        loadCarton(selectedCarton);
+      }
+    }
+
+    function loadCarton(cartonName) {
+      const cartonPath = `cartones/${cartonName}`;
+      baseImage = new Image();
+      baseImage.crossOrigin = "Anonymous";
+      baseImage.onload = function() {
+        imageWidth = this.naturalWidth;
+        imageHeight = this.naturalHeight;
+        resizeCanvas();
+        
+        // Actualizar display del cartón actual
+        const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
+        currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
+      };
+      baseImage.onerror = function() {
+        console.error("Error al cargar la imagen del cartón");
+      };
+      baseImage.src = cartonPath;
+      
+      // Limpiar dibujos al cargar nuevo cartón
+      paths = [];
+      redoStack = [];
+      isChanged = false;
+    }
+
+    function loadImageFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        baseImage = new Image();
+        baseImage.onload = function() {
+          imageWidth = this.naturalWidth;
+          imageHeight = this.naturalHeight;
+          resizeCanvas();
+          
+          // Actualizar display
+          currentCartonDisplay.textContent = "Personalizado";
         };
-      }
+        baseImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
-    // Alternar lista de cartones
+    function save() {
+      // Crear un canvas temporal con la imagen original y los dibujos
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = imageWidth;
+      tempCanvas.height = imageHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Dibujar la imagen base
+      tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+      
+      // Dibujar todos los trazos
+      tempCtx.save();
+      for (const path of paths) {
+        if (path.length < 1) continue;
+        
+        tempCtx.beginPath();
+        tempCtx.moveTo(path[0].x, path[0].y);
+        
+        for (let i = 1; i < path.length; i++) {
+          tempCtx.lineTo(path[i].x, path[i].y);
+        }
+        
+        tempCtx.strokeStyle = path[0].color;
+        tempCtx.lineWidth = path[0].size;
+        tempCtx.lineCap = "round";
+        tempCtx.lineJoin = "round";
+        tempCtx.globalAlpha = path[0].opacity;
+        tempCtx.stroke();
+      }
+      tempCtx.restore();
+      
+      // Crear enlace de descarga
+      const link = document.createElement('a');
+      const cartonNumber = currentCartonDisplay.textContent.replace('#', '') || 'custom';
+      link.download = `bingo-carton-${cartonNumber}-${new Date().toISOString().slice(0,10)}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+      
+      isChanged = false;
+    }
+
+    // Funciones de interfaz
     function toggleDropdown() {
-      const dropdown = document.getElementById("cartonDropdown");
-      dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+      cartonDropdown.classList.toggle('show');
     }
 
-    // Modo pantalla completa
+    function updateBrushSizeDisplay() {
+      brushSizeValue.textContent = `${size}px`;
+    }
+
     function toggleFullscreen() {
-      const elem = document.documentElement;
       if (!document.fullscreenElement) {
-        elem.requestFullscreen().catch(err => console.error(`Error al entrar en pantalla completa: ${err.message}`));
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error al intentar pantalla completa: ${err.message}`);
+        });
       } else {
-        document.exitFullscreen();
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
       }
     }
 
-    // Eventos de redimensionamiento
-    window.addEventListener("resize", () => {
-      setupCanvas();
-      if (baseImage.src) {
-        loadSelectedCarton();
+    // Funciones de manejo táctil (zoom y pan)
+    function handleTouchStart(e) {
+      e.preventDefault();
+      
+      if (e.touches.length === 2) {
+        // Inicio de pinch zoom
+        isPinching = true;
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        touchStartDistance = getDistance(touch1, touch2);
+        initialPinchDistance = touchStartDistance;
+        initialCanvasScale = currentScale;
+      } else if (e.touches.length === 1) {
+        // Inicio de pan o dibujo
+        const touch = e.touches[0];
+        startPos = getPosition(touch);
+        isPanning = true;
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      
+      if (isPinching && e.touches.length === 2) {
+        // Continuar pinch zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = getDistance(touch1, touch2);
+        
+        // Calcular nueva escala
+        const scaleFactor = currentDistance / initialPinchDistance;
+        currentScale = initialCanvasScale * scaleFactor;
+        
+        // Limitar escala mínima y máxima
+        currentScale = Math.max(0.5, Math.min(currentScale, 3));
+        
+        redrawCanvas();
+      } else if (isPanning && e.touches.length === 1 && !isPinching) {
+        // Continuar pan
+        const touch = e.touches[0];
+        const currentPos = getPosition(touch);
+        
+        transformOffset.x += currentPos.x - startPos.x;
+        transformOffset.y += currentPos.y - startPos.y;
+        
+        startPos = currentPos;
+        redrawCanvas();
+      }
+    }
+
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      
+      if (e.touches.length === 0) {
+        // Todos los dedos levantados
+        isPinching = false;
+        isPanning = false;
+      } else if (e.touches.length === 1 && isPinching) {
+        // Solo queda un dedo (transición de pinch a pan)
+        isPinching = false;
+        isPanning = true;
+        const touch = e.touches[0];
+        startPos = getPosition(touch);
+      }
+    }
+
+    // Funciones auxiliares
+    function getPosition(e) {
+      let clientX, clientY;
+      
+      if (e.touches) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function getDistance(touch1, touch2) {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function() {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+      };
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#carton-dropdown')) {
+        cartonDropdown.classList.remove('show');
       }
     });
-
-    // Inicialización
-    setupCanvas();
-
-    // Actualizar valores en tiempo real
-    document.getElementById("colorPicker").addEventListener("input", e => color = e.target.value);
-    document.getElementById("brushSizeSlider").addEventListener("input", e => {
-      size = +e.target.value;
-      document.getElementById("brushSizeValue").textContent = `${size}px`;
-    });
-    document.getElementById("opacityRange").addEventListener("input", e => opacity = +e.target.value);
   </script>
 </body>
 </html>

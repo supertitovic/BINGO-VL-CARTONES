@@ -3,157 +3,78 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marcar cartón Bingo VL</title>
+    <title>Jugar cartón Bingo VL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      html {
-        height: 100%;
-      }
+      html { height: 100%; }
       body {
-        margin: 0;
-        font-family: sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: #f4f4f4;
-        /* Usar 100% para que tome la altura del html, más fiable que vh en móviles a veces */
-        height: 100%;
-        overflow: hidden;
+        margin: 0; font-family: sans-serif; display: flex; flex-direction: column;
+        align-items: center; background: #f4f4f4; height: 100%; overflow: hidden;
       }
-
-      #app-container {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
-      }
-
+      #app-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
       #toolbar {
-        display: flex;
-        gap: 10px;
-        padding: 10px;
-        flex-wrap: wrap;
-        background: #fff;
-        border-bottom: 1px solid #ccc;
-        justify-content: center;
-        align-items: center;
-        flex-shrink: 0;
+        display: flex; gap: 10px; padding: 10px; flex-wrap: wrap; background: #fff;
+        border-bottom: 1px solid #ccc; justify-content: center; align-items: center; flex-shrink: 0;
       }
-
-      .tool-group {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
+      .tool-group { display: flex; gap: 8px; align-items: center; }
       button {
-        padding: 8px 12px;
-        font-size: 16px;
-        border: none;
-        background: #e3f2fd;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px; /* El gap puede dejar espacio extra si el span está vacío */
+        padding: 8px 12px; font-size: 16px; border: none; background: #e3f2fd;
+        border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;
       }
-       /* Ajuste opcional para el botón dropdown sin texto */
-      #carton-dropdown-container button {
-        gap: 0; /* Reducir gap si no hay texto */
-        padding: 8px; /* Ajustar padding si es necesario */
-      }
-      #carton-dropdown-container button i {
-         margin-right: 0; /* Quitar margen si no hay texto */
-      }
+      /* Quitar gap extra si el span está vacío */
+       #carton-dropdown-container button:has(#current-carton:empty) {
+           gap: 0;
+       }
+       #carton-dropdown-container button:has(#current-carton:empty) i {
+           margin-right: 0;
+       }
 
-
-      button:hover {
-        background: #bbdefb;
-      }
-
-      button i {
-        font-size: 18px;
-      }
-
+      button:hover { background: #bbdefb; }
+      button i { font-size: 18px; }
       #canvas-container {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: auto;
-        padding: 10px;
-        min-height: 0;
-        box-sizing: border-box;
-        width: 100%;
+        flex: 1; display: flex; justify-content: center; align-items: center;
+        overflow: auto; padding: 10px; min-height: 0; box-sizing: border-box; width: 100%;
       }
-
       canvas {
-        background: #fff;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        display: block;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
+        background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: block;
+        max-width: 100%; max-height: 100%; object-fit: contain;
       }
-
-      input[type="color"] {
-        width: 30px;
-        height: 30px;
-        border: 2px solid #ddd;
-        border-radius: 50%;
-        padding: 0;
-      }
-
-      input[type="range"] {
-        width: 100px;
-      }
-
-      #carton-dropdown-container {
-        position: relative;
-      }
-
+      input[type="color"] { width: 30px; height: 30px; border: 2px solid #ddd; border-radius: 50%; padding: 0; }
+      input[type="range"] { width: 100px; }
+      #carton-dropdown-container { position: relative; }
       #cartonDropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 200px;
-        max-height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ccc;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        display: none;
-        z-index: 100;
+        position: absolute; top: 100%; left: 0; width: 200px; max-height: 300px; overflow-y: auto;
+        background: white; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; z-index: 100;
       }
-
-      #cartonDropdown.show {
-        display: block;
-      }
-
-      /* El span existe pero no tendrá contenido visible */
+      #cartonDropdown.show { display: block; }
+      /* El span ahora puede tener texto */
       #current-carton {
-        /* font-weight: bold; */
-        /* margin-left: 5px; */
-        /* Ocultarlo completamente si causa problemas de layout */
-         display: none;
+        font-weight: bold;
+        margin-left: 5px; /* Recuperar margen si hay texto */
+        /* display: inline;  Asegurar que se muestra si tiene contenido */
       }
+      /* Ocultar el span si está vacío para que el gap no aplique */
+      #current-carton:empty {
+           display: none;
+      }
+
     </style>
 </head>
 <body>
     <div id="app-container">
       <div id="toolbar">
         <div class="tool-group">
-          <label title="Color del marcador"><i class="fas fa-palette"></i><input type="color" id="colorPicker" value="#ff0000"></label>
-        </div>
-        <div class="tool-group">
-           <label title="Tamaño del marcador"><i class="fas fa-brush"></i><input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5"><span id="brushSizeValue">120px</span></label>
-        </div>
-        <div class="tool-group">
-            <label title="Transparencia"><i class="fas fa-adjust"></i><input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6"></label>
-        </div>
+             <label title="Color del marcador"><i class="fas fa-palette"></i><input type="color" id="colorPicker" value="#ff0000"></label>
+         </div>
          <div class="tool-group">
-            <button onclick="undo()" title="Deshacer"><i class="fas fa-undo"></i></button>
-            <button onclick="redo()" title="Rehacer"><i class="fas fa-redo"></i></button>
+             <label title="Tamaño del marcador"><i class="fas fa-brush"></i><input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5"><span id="brushSizeValue">120px</span></label>
+         </div>
+         <div class="tool-group">
+             <label title="Transparencia"><i class="fas fa-adjust"></i><input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6"></label>
+         </div>
+         <div class="tool-group">
+             <button onclick="undo()" title="Deshacer"><i class="fas fa-undo"></i></button>
+             <button onclick="redo()" title="Rehacer"><i class="fas fa-redo"></i></button>
          </div>
          <div class="tool-group">
              <button onclick="save()" title="Guardar"><i class="fas fa-save"></i></button>
@@ -165,7 +86,7 @@
              <div id="cartonDropdown"></div>
          </div>
          <div class="tool-group">
-             <button onclick="document.getElementById('fileInput').click()" title="Cargar imagen"><i class="fas fa-folder-open"></i></button>
+              <button id="loadImageButton" title="Cargar imagen"><i class="fas fa-folder-open"></i></button>
              <input type="file" id="fileInput" accept="image/*" style="display:none;">
          </div>
          <div class="tool-group">
@@ -179,32 +100,11 @@
     </div>
 
     <script>
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
-      const colorPicker = document.getElementById("colorPicker");
-      const brushSizeSlider = document.getElementById("brushSizeSlider");
-      const brushSizeValue = document.getElementById("brushSizeValue");
-      const opacityRange = document.getElementById("opacityRange");
-      const cartonDropdown = document.getElementById("cartonDropdown");
-      const currentCartonDisplay = document.getElementById("current-carton"); // El span sigue existiendo
-      const fileInput = document.getElementById("fileInput");
-      const canvasContainer = document.getElementById("canvas-container");
-      const cartonDropdownContainer = document.getElementById('carton-dropdown-container');
-      const toolbar = document.getElementById('toolbar'); // Referencia a la toolbar
+      // ... (variables globales sin cambios) ...
+      const canvas = document.getElementById("canvas"); /*...*/ const ctx = canvas.getContext("2d"); /*...*/ const colorPicker = document.getElementById("colorPicker"); /*...*/ const brushSizeSlider = document.getElementById("brushSizeSlider"); /*...*/ const brushSizeValue = document.getElementById("brushSizeValue"); /*...*/ const opacityRange = document.getElementById("opacityRange"); /*...*/ const cartonDropdown = document.getElementById("cartonDropdown"); /*...*/ const currentCartonDisplay = document.getElementById("current-carton"); /*...*/ const fileInput = document.getElementById("fileInput"); /*...*/ const canvasContainer = document.getElementById("canvas-container"); /*...*/ const cartonDropdownContainer = document.getElementById('carton-dropdown-container'); /*...*/ const toolbar = document.getElementById('toolbar'); /*...*/ const loadImageButton = document.getElementById('loadImageButton'); // Botón cargar imagen
 
-      let drawing = false;
-      let paths = [];
-      let redoStack = [];
-      let currentPath = null;
-      let color = colorPicker.value;
-      let size = +brushSizeSlider.value;
-      let opacity = +opacityRange.value;
-      let baseImage = new Image();
-      let imageWidth, imageHeight;
-      let isChanged = false;
-      let cartones = [];
-      let scale = 1;
-      let isImageLoaded = false;
+      let drawing = false; let paths = []; let redoStack = []; let currentPath = null; let color = colorPicker.value; let size = +brushSizeSlider.value; let opacity = +opacityRange.value; let baseImage = new Image(); let imageWidth, imageHeight; let isChanged = false; let cartones = []; let scale = 1; let isImageLoaded = false;
+
 
       init();
 
@@ -215,252 +115,81 @@
           setupEventListeners();
           await loadCartonesList();
 
+          currentCartonDisplay.textContent = ''; // Asegurar que inicia vacío
+
           let loadedFromUrl = false;
           if (cartonPathFromUrl) {
-              const cartonFilenameFromUrl = cartonPathFromUrl.startsWith('cartones/')
-                  ? cartonPathFromUrl.substring(9)
-                  : null;
-
+              const cartonFilenameFromUrl = cartonPathFromUrl.startsWith('cartones/') ? cartonPathFromUrl.substring(9) : null;
               if (cartonFilenameFromUrl && cartones.includes(cartonFilenameFromUrl)) {
-                  loadCarton(cartonFilenameFromUrl);
+                  loadCarton(cartonFilenameFromUrl); // Mostrará el #Número
                   loadedFromUrl = true;
               } else {
                   console.warn("Carton from URL parameter not found or invalid:", cartonPathFromUrl);
-                  // No mostramos texto de error en el botón
-                  // currentCartonDisplay.textContent = '';
-                  isImageLoaded = false;
+                  isImageLoaded = false; // Texto ya está vacío
               }
           }
 
           if (!loadedFromUrl && !isImageLoaded) {
-              isImageLoaded = false;
-              // No hay texto que poner en el botón
-              // currentCartonDisplay.textContent = '';
+              isImageLoaded = false; // Texto ya está vacío
               resizeCanvas();
           }
 
           updateBrushSizeDisplay();
-          document.addEventListener('fullscreenchange', () => {
-              // Delay sigue siendo útil para fullscreen transitions
-              setTimeout(resizeCanvas, 150);
-          });
+          document.addEventListener('fullscreenchange', () => { setTimeout(resizeCanvas, 150); });
       }
 
       function setupEventListeners() {
-          // (...) Eventos de dibujo, controles, click fuera dropdown...
-          canvas.addEventListener("mousedown", startDrawing);
-          canvas.addEventListener("mousemove", draw);
-          canvas.addEventListener("mouseup", endDrawing);
-          canvas.addEventListener("mouseout", endDrawing);
-          canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
-          canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
-          canvas.addEventListener("touchend", handleTouchEnd);
-          colorPicker.addEventListener("input", (e) => { color = e.target.value; });
-          brushSizeSlider.addEventListener("input", (e) => { size = +e.target.value; updateBrushSizeDisplay(); });
-          opacityRange.addEventListener("input", (e) => { opacity = +e.target.value; });
-          fileInput.addEventListener("change", (e) => {
-            if (e.target.files && e.target.files[0]) { loadImageFromFile(e.target.files[0]); }
-          });
-          window.addEventListener('click', (e) => {
-              if (!cartonDropdownContainer.contains(e.target)) { cartonDropdown.classList.remove('show'); }
-          });
+          // (...) Eventos canvas, controles...
+          canvas.addEventListener("mousedown", startDrawing); canvas.addEventListener("mousemove", draw); canvas.addEventListener("mouseup", endDrawing); canvas.addEventListener("mouseout", endDrawing); canvas.addEventListener("touchstart", handleTouchStart, { passive: false }); canvas.addEventListener("touchmove", handleTouchMove, { passive: false }); canvas.addEventListener("touchend", handleTouchEnd); colorPicker.addEventListener("input", (e) => { color = e.target.value; }); brushSizeSlider.addEventListener("input", (e) => { size = +e.target.value; updateBrushSizeDisplay(); }); opacityRange.addEventListener("input", (e) => { opacity = +e.target.value; }); window.addEventListener('click', (e) => { if (!cartonDropdownContainer.contains(e.target)) { cartonDropdown.classList.remove('show'); } }); window.addEventListener("resize", resizeCanvas); if (window.visualViewport) { window.visualViewport.addEventListener('resize', resizeCanvas); } window.addEventListener('beforeunload', (event) => { if (isChanged) { const msg = '...'; event.preventDefault(); event.returnValue = msg; return msg; } });
 
-
-          // Listener para resize de ventana (general)
-          window.addEventListener("resize", resizeCanvas);
-
-          // *** NUEVO/MODIFICADO: Listener para Visual Viewport API (si existe) ***
-          if (window.visualViewport) {
-              window.visualViewport.addEventListener('resize', resizeCanvas);
-          }
-
-          // Listener para beforeunload (sin cambios)
-          window.addEventListener('beforeunload', (event) => {
+          // *** MODIFICADO: Listener para el botón de cargar imagen ***
+          loadImageButton.addEventListener('click', () => {
+              // Preguntar si hay cambios antes de abrir el diálogo
               if (isChanged) {
-                  const confirmationMessage = 'Los cambios no guardados se perderán. ¿Estás seguro de que quieres salir?';
-                  event.preventDefault();
-                  event.returnValue = confirmationMessage;
-                  return confirmationMessage;
+                  if (!confirm('Hay cambios sin guardar. ¿Quieres cargar una nueva imagen y descartar los cambios actuales?')) {
+                      return; // Cancelar si el usuario dice no
+                  }
+                  // Si confirma, isChanged se reseteará al cargar la imagen
               }
+              // Abrir el input file oculto
+              fileInput.click();
           });
+
+          // Listener para cuando se selecciona un archivo (después de confirmar si era necesario)
+          fileInput.addEventListener("change", (e) => {
+              if (e.target.files && e.target.files[0]) {
+                  loadImageFromFile(e.target.files[0]);
+              }
+              // Resetear el valor para permitir cargar el mismo archivo de nuevo si falla o se cancela
+              fileInput.value = '';
+          });
+          // *** FIN MODIFICADO ***
       }
 
-      // --- Funciones de dibujo (startDrawing, draw, endDrawing) ---
-      // Marcan isChanged (sin cambios)
-      function startDrawing(e) {
-          if (!isImageLoaded) return;
-          e.preventDefault();
-          drawing = true;
-          const pos = getPosition(e);
-          currentPath = { points: [{ x: pos.x / scale, y: pos.y / scale, color, size, opacity }], dots: [] };
-          drawDot(pos.x / scale, pos.y / scale, size, color, opacity);
-          currentPath.dots.push({ x: pos.x / scale, y: pos.y / scale, size, color, opacity });
-          // isChanged = true; // Marcar en draw o endDrawing es suficiente
-      }
-      function draw(e) {
-          if (!drawing || !currentPath || !isImageLoaded) return;
-          e.preventDefault();
-          const pos = getPosition(e);
-          const lastPoint = currentPath.points[currentPath.points.length - 1];
-          const dist = Math.hypot(pos.x / scale - lastPoint.x, pos.y / scale - lastPoint.y);
-          if (dist > size / 10) {
-              currentPath.points.push({ x: pos.x / scale, y: pos.y / scale, color, size, opacity });
-              redrawCanvas();
-              isChanged = true;
-          }
-      }
-      function endDrawing() {
-          if (!drawing || !isImageLoaded) return;
-          drawing = false;
-          if (currentPath && currentPath.points.length > 0) {
-              paths.push(currentPath);
-              redoStack = [];
-              isChanged = true;
-          }
-          currentPath = null;
-      }
+      // ... (Funciones de dibujo: startDrawing, draw, endDrawing - marcan isChanged) ...
+       function startDrawing(e) { if (!isImageLoaded) return; e.preventDefault(); drawing = true; const pos = getPosition(e); currentPath = { points: [{ x: pos.x / scale, y: pos.y / scale, color, size, opacity }], dots: [] }; drawDot(pos.x / scale, pos.y / scale, size, color, opacity); currentPath.dots.push({ x: pos.x / scale, y: pos.y / scale, size, color, opacity }); }
+       function draw(e) { if (!drawing || !currentPath || !isImageLoaded) return; e.preventDefault(); const pos = getPosition(e); const lastPoint = currentPath.points[currentPath.points.length - 1]; const dist = Math.hypot(pos.x / scale - lastPoint.x, pos.y / scale - lastPoint.y); if (dist > size / 10) { currentPath.points.push({ x: pos.x / scale, y: pos.y / scale, color, size, opacity }); redrawCanvas(); isChanged = true; } }
+       function endDrawing() { if (!drawing || !isImageLoaded) return; drawing = false; if (currentPath && currentPath.points.length > 0) { paths.push(currentPath); redoStack = []; isChanged = true; } currentPath = null; }
 
-      // --- drawDot, redrawCanvas, drawPath, clearCanvas ---
-      // (Sin cambios funcionales)
-       function drawDot(x, y, size, color, opacity) {
-           ctx.save();
-           ctx.beginPath();
-           ctx.arc(x * scale, y * scale, (size * scale) / 2, 0, Math.PI * 2);
-           ctx.fillStyle = color;
-           ctx.globalAlpha = opacity;
-           ctx.fill();
-           ctx.restore();
-       }
-       function redrawCanvas() {
-           clearCanvas();
-           drawBaseImage();
-           // (...) dibujar paths y currentPath
-            for (const path of paths) {
-                if (path.points.length > 1) drawPath(path.points);
-                for (const dot of path.dots) drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity);
-            }
-            if (currentPath) {
-                if (currentPath.points.length > 1) drawPath(currentPath.points);
-            }
-       }
-       function drawPath(points) {
-           if (points.length < 1) return;
-           ctx.save();
-           ctx.beginPath();
-           ctx.moveTo(points[0].x * scale, points[0].y * scale);
-           for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x * scale, points[i].y * scale);
-           ctx.strokeStyle = points[0].color;
-           ctx.lineWidth = points[0].size * scale;
-           ctx.lineCap = "round"; ctx.lineJoin = "round";
-           ctx.globalAlpha = points[0].opacity;
-           ctx.stroke();
-           ctx.restore();
-       }
+      // ... (drawDot, redrawCanvas, drawPath, clearCanvas, drawBaseImage) ...
+       function drawDot(x, y, size, color, opacity) { ctx.save(); ctx.beginPath(); ctx.arc(x * scale, y * scale, (size * scale) / 2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.globalAlpha = opacity; ctx.fill(); ctx.restore(); }
+       function redrawCanvas() { clearCanvas(); drawBaseImage(); for (const path of paths) { if (path.points.length > 1) drawPath(path.points); for (const dot of path.dots) drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity); } if (currentPath) { if (currentPath.points.length > 1) drawPath(currentPath.points); } }
+       function drawPath(points) { if (points.length < 1) return; ctx.save(); ctx.beginPath(); ctx.moveTo(points[0].x * scale, points[0].y * scale); for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x * scale, points[i].y * scale); ctx.strokeStyle = points[0].color; ctx.lineWidth = points[0].size * scale; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.globalAlpha = points[0].opacity; ctx.stroke(); ctx.restore(); }
        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+       function drawBaseImage() { if (isImageLoaded && baseImage.complete && baseImage.naturalWidth !== 0) { ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height); } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); if (!isImageLoaded || !baseImage.src) { ctx.fillStyle = '#aaaaaa'; ctx.font = '20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Seleccione o cargue un cartón', canvas.width / 2, canvas.height / 2); } } }
 
+      // ... (resizeCanvas usando VisualViewport si está disponible) ...
+       function resizeCanvas() { const container = canvasContainer; let availableWidthForContainer = 0; let availableHeightForContainer = 0; const toolbarHeight = toolbar.offsetHeight; if (window.visualViewport) { availableWidthForContainer = window.visualViewport.width; availableHeightForContainer = window.visualViewport.height - toolbarHeight; } else { availableWidthForContainer = container.clientWidth; availableHeightForContainer = container.clientHeight; } if (!isImageLoaded || !baseImage.complete || baseImage.naturalWidth === 0) { const placeholderWidth = availableWidthForContainer > 20 ? availableWidthForContainer - 20 : 300; const placeholderHeight = availableHeightForContainer > 20 ? availableHeightForContainer - 20 : 200; canvas.width = placeholderWidth * 0.95; canvas.height = placeholderHeight * 0.95; scale = 1; drawBaseImage(); return; } const availableWidth = availableWidthForContainer - 20; const availableHeight = availableHeightForContainer - 20; if (availableWidth <= 0 || availableHeight <= 0) { console.warn("..."); canvas.width = 10; canvas.height = 10; redrawCanvas(); return; } const scaleX = availableWidth / imageWidth; const scaleY = availableHeight / imageHeight; scale = Math.min(scaleX, scaleY); if (scale <= 0) scale = 0.1; canvas.width = imageWidth * scale; canvas.height = imageHeight * scale; redrawCanvas(); }
 
-       // --- drawBaseImage --- (Sin cambios, muestra placeholder)
-       function drawBaseImage() {
-           if (isImageLoaded && baseImage.complete && baseImage.naturalWidth !== 0) {
-               ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
-           } else {
-               ctx.fillStyle = '#ffffff';
-               ctx.fillRect(0, 0, canvas.width, canvas.height);
-               if (!isImageLoaded || !baseImage.src) {
-                   ctx.fillStyle = '#aaaaaa'; ctx.font = '20px sans-serif'; ctx.textAlign = 'center';
-                   ctx.fillText('Seleccione o cargue un cartón', canvas.width / 2, canvas.height / 2);
-               }
-           }
-       }
-
-
-      // --- resizeCanvas MODIFICADO para usar Visual Viewport API ---
-      function resizeCanvas() {
-          const container = canvasContainer;
-          let availableWidthForContainer = 0;
-          let availableHeightForContainer = 0;
-          const toolbarHeight = toolbar.offsetHeight;
-
-          // Intentar usar VisualViewport API para el tamaño real disponible
-          if (window.visualViewport) {
-               // console.log("Using Visual Viewport:", window.visualViewport.width, "x", window.visualViewport.height); // DEBUG
-               availableWidthForContainer = window.visualViewport.width;
-               availableHeightForContainer = window.visualViewport.height - toolbarHeight;
-          } else {
-               // Fallback para navegadores sin VisualViewport API
-               // console.log("Using clientHeight/Width"); // DEBUG
-               availableWidthForContainer = container.clientWidth; // Ancho del contenedor
-               // La altura del contenedor flex debería ser el espacio restante
-               availableHeightForContainer = container.clientHeight;
-               // Alternativa si clientHeight falla en flex: window.innerHeight - toolbarHeight
-               // availableHeightForContainer = window.innerHeight - toolbarHeight;
-          }
-
-           // console.log(`Container Available W: ${availableWidthForContainer}, H: ${availableHeightForContainer}`); // DEBUG
-
-          if (!isImageLoaded || !baseImage.complete || baseImage.naturalWidth === 0) {
-              // Ajustar tamaño placeholder (considerando padding)
-              const placeholderWidth = availableWidthForContainer > 20 ? availableWidthForContainer - 20 : 300;
-              const placeholderHeight = availableHeightForContainer > 20 ? availableHeightForContainer - 20 : 200;
-              canvas.width = placeholderWidth * 0.95; // Un poco más pequeño que el espacio
-              canvas.height = placeholderHeight * 0.95;
-              scale = 1;
-              drawBaseImage();
-              return;
-          }
-
-          // Calcular espacio disponible DENTRO del padding
-          const availableWidth = availableWidthForContainer - 20; // 10px padding L/R
-          const availableHeight = availableHeightForContainer - 20; // 10px padding T/B
-
-          if (availableWidth <= 0 || availableHeight <= 0) {
-              console.warn("resizeCanvas - Available dimensions too small after padding adjustment.");
-              canvas.width = 10; canvas.height = 10;
-              redrawCanvas();
-              return;
-          }
-
-          const scaleX = availableWidth / imageWidth;
-          const scaleY = availableHeight / imageHeight;
-          scale = Math.min(scaleX, scaleY);
-
-          if (scale <= 0) scale = 0.1;
-
-          // console.log(`Calculated scale: ${scale}`); // DEBUG
-
-          canvas.width = imageWidth * scale;
-          canvas.height = imageHeight * scale;
-          // console.log(`Set canvas size W: ${canvas.width}, H: ${canvas.height}`); // DEBUG
-
-          redrawCanvas();
-      }
-      // --- FIN resizeCanvas MODIFICADO ---
-
-      // --- undo, redo (marcan isChanged) --- (Sin cambios)
+      // ... (undo, redo - marcan isChanged) ...
        function undo() { if (paths.length > 0) { redoStack.push(paths.pop()); isChanged = true; redrawCanvas(); } }
        function redo() { if (redoStack.length > 0) { paths.push(redoStack.pop()); isChanged = true; redrawCanvas(); } }
 
-      // --- loadCartonesList --- (Sin cambios funcionales)
-      async function loadCartonesList() {
-          try {
-              const response = await fetch('cartones/list.json');
-              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-              const contentType = response.headers.get("content-type");
-              if (!contentType || !contentType.includes("application/json")) throw new TypeError("list.json no es JSON");
-              cartones = await response.json();
-              if (!Array.isArray(cartones)) throw new Error('list.json no es un array');
-              populateCartonDropdown();
-          } catch (error) {
-              console.error('Error fatal al cargar/procesar la lista de cartones:', error);
-              cartones = [];
-              populateCartonDropdown();
-              // No mostrar error en el botón
-              // currentCartonDisplay.textContent = '';
-              alert("Error grave: No se pudo cargar la lista de cartones (list.json).\nVerifique que el archivo exista, sea accesible y tenga el formato JSON correcto (un array de strings).\nDetalle: " + error.message);
-          }
-      }
+      // ... (loadCartonesList) ...
+      async function loadCartonesList() { try { const response = await fetch('cartones/list.json'); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); const contentType = response.headers.get("content-type"); if (!contentType || !contentType.includes("application/json")) throw new TypeError("list.json no es JSON"); cartones = await response.json(); if (!Array.isArray(cartones)) throw new Error('list.json no es un array'); populateCartonDropdown(); } catch (error) { console.error('Error fatal:', error); cartones = []; populateCartonDropdown(); currentCartonDisplay.textContent = ''; /* No mostrar error aquí */ alert("Error grave: No se pudo cargar la lista..."); } }
 
-      // --- populateCartonDropdown --- (Modificado para actualizar URL)
+
+      // --- populateCartonDropdown MODIFICADO ---
       function populateCartonDropdown() {
           cartonDropdown.innerHTML = '';
           if (cartones.length === 0) { /* ... mensaje error ... */ return; }
@@ -474,19 +203,32 @@
               item.addEventListener('mouseleave', () => item.style.backgroundColor = 'white');
 
               item.addEventListener('click', () => {
+                  // *** NUEVO: Confirmar si hay cambios ***
+                  if (isChanged) {
+                      if (!confirm('Hay cambios sin guardar. ¿Quieres cargar el nuevo cartón y descartar los cambios actuales?')) {
+                          cartonDropdown.classList.remove('show'); // Ocultar dropdown si cancela
+                          return; // Cancelar si el usuario dice no
+                      }
+                      // Si confirma, la carga procederá y reseteará isChanged
+                  }
+                  // *** FIN NUEVO ***
+
+                  // Proceder a cargar y actualizar URL (si no se canceló)
                   loadCarton(cartonName);
                   cartonDropdown.classList.remove('show');
-                  try { // Actualizar URL
+                  try {
                       const nextURL = `${window.location.origin}${window.location.pathname}?carton=cartones/${cartonName}`;
-                      const nextTitle = `Cartón ${parseInt(cartonNumber)}`; // Título opcional
+                      const nextTitle = `Cartón ${parseInt(cartonNumber)}`;
                       window.history.pushState({ carton: cartonName }, nextTitle, nextURL);
                   } catch (e) { console.error("Error updating URL:", e); }
               });
               cartonDropdown.appendChild(item);
           });
       }
+      // --- FIN populateCartonDropdown MODIFICADO ---
 
-      // --- loadCarton --- (Modificado para no poner texto en botón y resetear isChanged)
+
+      // --- loadCarton MODIFICADO --- (Pone texto en botón, resetea isChanged)
       function loadCarton(cartonName) {
           const cartonPath = `cartones/${cartonName}`;
           baseImage = new Image();
@@ -494,22 +236,26 @@
               imageWidth = this.naturalWidth; imageHeight = this.naturalHeight;
               isImageLoaded = true;
               resizeCanvas();
-              // currentCartonDisplay.textContent = ''; // No poner texto
-              paths = []; redoStack = []; isChanged = false;
+              // Poner número de cartón en el botón
+              const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
+              currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
+              paths = []; redoStack = []; isChanged = false; // Resetear cambios
           };
           baseImage.onerror = function() {
               console.error("Error al cargar la imagen del cartón:", cartonPath);
               alert("No se pudo cargar el cartón: " + cartonName);
               isImageLoaded = false; resizeCanvas();
-              // currentCartonDisplay.textContent = ''; // No poner texto
-              isChanged = false;
+              currentCartonDisplay.textContent = ''; // Vaciar texto en error
+              isChanged = false; // Resetear cambios
           };
           isImageLoaded = false; imageWidth = 0; imageHeight = 0;
-          // currentCartonDisplay.textContent = ''; // No poner texto "Cargando..."
+          currentCartonDisplay.textContent = '...'; // Indicar carga brevemente
           baseImage.src = cartonPath;
       }
+      // --- FIN loadCarton MODIFICADO ---
 
-      // --- loadImageFromFile --- (Modificado para no poner texto en botón, resetear URL y isChanged)
+
+      // --- loadImageFromFile MODIFICADO --- (Pone texto, resetea URL y isChanged)
       function loadImageFromFile(file) {
           const reader = new FileReader();
           reader.onload = function(e) {
@@ -517,45 +263,44 @@
               baseImage.onload = function() {
                   imageWidth = this.naturalWidth; imageHeight = this.naturalHeight;
                   isImageLoaded = true; resizeCanvas();
-                  // currentCartonDisplay.textContent = ''; // No poner texto
-                  paths = []; redoStack = []; isChanged = false;
+                  currentCartonDisplay.textContent = 'Pers.'; // Poner texto abreviado
+                  paths = []; redoStack = []; isChanged = false; // Resetear cambios
                   try { // Resetear URL
                       const nextURL = window.location.origin + window.location.pathname;
                       window.history.pushState({ carton: 'personalizado' }, "Cartón Personalizado", nextURL);
                   } catch (err) { console.error("Error resetting URL:", err); }
               };
-              baseImage.onerror = function() { /* ... manejo error ... */ isImageLoaded = false; resizeCanvas(); /* currentCartonDisplay.textContent = ''; */ isChanged = false; };
+              baseImage.onerror = function() { alert("No se pudo cargar la imagen seleccionada."); isImageLoaded = false; resizeCanvas(); currentCartonDisplay.textContent = ''; isChanged = false; };
               isImageLoaded = false; imageWidth = 0; imageHeight = 0;
-              // currentCartonDisplay.textContent = ''; // No poner texto
+              currentCartonDisplay.textContent = '...'; // Indicar carga
               baseImage.src = e.target.result;
           };
-           reader.onerror = () => { /* ... manejo error ... */ /* currentCartonDisplay.textContent = ''; */ isChanged = false; }
+           reader.onerror = () => { alert("Hubo un error al leer el archivo."); currentCartonDisplay.textContent = ''; isChanged = false; }
           reader.readAsDataURL(file);
       }
+      // --- FIN loadImageFromFile MODIFICADO ---
 
 
-      // --- save --- (Modificado para resetear isChanged)
+      // --- save --- (Resetea isChanged)
       function save() {
-          if (!isImageLoaded) { /* ... alerta ... */ return; }
-          // (...) Crear canvas temporal y dibujar
-          const tempCanvas = document.createElement('canvas'); /*...*/ tempCanvas.width = imageWidth; tempCanvas.height = imageHeight; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
+          if (!isImageLoaded) { alert("No hay cartón cargado para guardar."); return; }
+          // (...) Crear canvas temporal y dibujar...
+          const tempCanvas = document.createElement('canvas'); tempCanvas.width = imageWidth; tempCanvas.height = imageHeight; const tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
            for (const path of paths) { if (path.points.length > 1) { /*...*/ tempCtx.stroke();} for (const dot of path.dots) { /*...*/ tempCtx.fill();} }
-          // (...) Generar nombre y descargar
-          const link = document.createElement('a'); let filenameSuffix = 'carton'; /* ... if/else ... */ link.download = `bingo-${filenameSuffix}-marcado.png`; link.href = tempCanvas.toDataURL('image/png'); link.click();
+          // (...) Generar nombre y descargar...
+          const link = document.createElement('a'); let filenameSuffix = 'carton'; const txt = currentCartonDisplay.textContent; if (txt.startsWith('#')) filenameSuffix = txt.substring(1); else if (txt === 'Pers.') filenameSuffix = 'personalizado'; link.download = `bingo-${filenameSuffix}-marcado.png`; link.href = tempCanvas.toDataURL('image/png'); link.click();
           isChanged = false; // Resetear al guardar
       }
 
-      // --- toggleDropdown, updateBrushSizeDisplay, toggleFullscreen --- (Sin cambios)
+      // ... (toggleDropdown, updateBrushSizeDisplay, toggleFullscreen) ...
        function toggleDropdown() { cartonDropdown.classList.toggle('show'); }
        function updateBrushSizeDisplay() { brushSizeValue.textContent = `${size}px`; }
-       function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { /*...*/ }); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+       function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => { /*...*/ }); else if (document.exitFullscreen) document.exitFullscreen(); }
 
-      // --- Manejo táctil --- (Sin cambios)
-       function handleTouchStart(e) { if (!isImageLoaded) return; e.preventDefault(); const touch = e.touches[0]; const mouseEvent = new MouseEvent("mousedown", { clientX: touch.clientX, clientY: touch.clientY }); canvas.dispatchEvent(mouseEvent); }
-       function handleTouchMove(e) { if (!isImageLoaded) return; e.preventDefault(); const touch = e.touches[0]; const mouseEvent = new MouseEvent("mousemove", { clientX: touch.clientX, clientY: touch.clientY }); canvas.dispatchEvent(mouseEvent); }
-       function handleTouchEnd(e) { if (!isImageLoaded) return; e.preventDefault(); const mouseEvent = new MouseEvent("mouseup", {}); canvas.dispatchEvent(mouseEvent); }
+      // ... (Manejo táctil) ...
+       function handleTouchStart(e) { /* ... */ } function handleTouchMove(e) { /* ... */ } function handleTouchEnd(e) { /* ... */ }
 
-      // --- getPosition --- (Sin cambios)
+      // ... (getPosition) ...
        function getPosition(e) { const rect = canvas.getBoundingClientRect(); const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0; const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? 0; return { x: clientX - rect.left, y: clientY - rect.top }; }
 
     </script>

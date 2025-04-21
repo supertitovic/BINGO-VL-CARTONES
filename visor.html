@@ -73,6 +73,8 @@
     canvas {
       background: #fff;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 100%;
+      max-height: 100%;
     }
     
     input[type="color"] {
@@ -109,6 +111,12 @@
     #current-carton {
       font-weight: bold;
       margin-left: 5px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+      color: #666;
     }
   </style>
 </head>
@@ -155,7 +163,7 @@
       <div class="tool-group" id="carton-dropdown">
         <button onclick="toggleDropdown()" title="Seleccionar cartón">
           <i class="fas fa-list-ol"></i>
-          <span id="current-carton">Cartón</span>
+          <span id="current-carton">Seleccionar</span>
         </button>
         <select id="cartonDropdown" onchange="loadSelectedCarton()"></select>
       </div>
@@ -176,6 +184,10 @@
     
     <div id="canvas-container">
       <canvas id="canvas"></canvas>
+      <div id="empty-message" class="empty-state">
+        <i class="fas fa-image" style="font-size: 48px; margin-bottom: 10px;"></i>
+        <p>Selecciona un cartón o carga una imagen para comenzar</p>
+      </div>
     </div>
   </div>
 
@@ -191,6 +203,7 @@
     const currentCartonDisplay = document.getElementById("current-carton");
     const fileInput = document.getElementById("fileInput");
     const canvasContainer = document.getElementById("canvas-container");
+    const emptyMessage = document.getElementById("empty-message");
 
     // Variables de estado
     let drawing = false;
@@ -200,11 +213,13 @@
     let color = colorPicker.value;
     let size = +brushSizeSlider.value;
     let opacity = +opacityRange.value;
-    let baseImage = new Image();
-    let imageWidth, imageHeight;
+    let baseImage = null;
+    let imageWidth = 0, imageHeight = 0;
     let isChanged = false;
     let cartones = [];
     let scale = 1;
+    let canvasOffset = { x: 0, y: 0 };
+    let lastFullscreenState = false;
 
     // Inicialización
     init();
@@ -212,15 +227,14 @@
     async function init() {
       setupEventListeners();
       await loadCartonesList();
-      
-      if (cartones.length > 0) {
-        loadCarton(cartones[0]);
-      }
-      
       updateBrushSizeDisplay();
       
-      // Evento para redimensionamiento al cambiar pantalla completa
-      document.addEventListener('fullscreenchange', resizeCanvas);
+      // Evento para redimensionamiento
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      window.addEventListener('resize', debounce(handleResize, 200));
+      
+      // Mostrar estado inicial
+      updateEmptyState();
     }
 
     function setupEventListeners() {
@@ -254,48 +268,39 @@
           loadImageFromFile(e.target.files[0]);
         }
       });
-      
-      window.addEventListener("resize", debounce(resizeCanvas, 200));
     }
 
-    // Funciones de dibujo corregidas
+    // Funciones de dibujo mejoradas
     function startDrawing(e) {
+      if (!baseImage) return;
+      
       e.preventDefault();
       drawing = true;
       
       const pos = getPosition(e);
       currentPath = {
-        points: [{
-          x: pos.x / scale,
-          y: pos.y / scale,
-          color,
+        dots: [{
+          x: (pos.x - canvasOffset.x) / scale,
+          y: (pos.y - canvasOffset.y) / scale,
           size,
+          color,
           opacity
-        }],
-        dots: []
+        }]
       };
       
-      // Dibujar punto inmediatamente
-      drawDot(pos.x / scale, pos.y / scale, size, color, opacity);
-      currentPath.dots.push({
-        x: pos.x / scale,
-        y: pos.y / scale,
-        size,
-        color,
-        opacity
-      });
+      redrawCanvas();
     }
 
     function draw(e) {
-      if (!drawing || !currentPath) return;
+      if (!drawing || !currentPath || !baseImage) return;
       e.preventDefault();
       
       const pos = getPosition(e);
-      currentPath.points.push({
-        x: pos.x / scale,
-        y: pos.y / scale,
-        color,
+      currentPath.dots.push({
+        x: (pos.x - canvasOffset.x) / scale,
+        y: (pos.y - canvasOffset.y) / scale,
         size,
+        color,
         opacity
       });
       
@@ -306,7 +311,7 @@
       if (!drawing) return;
       drawing = false;
       
-      if (currentPath && currentPath.points.length > 0) {
+      if (currentPath && currentPath.dots.length > 0) {
         paths.push(currentPath);
         redoStack = [];
         isChanged = true;
@@ -325,31 +330,24 @@
     }
 
     function redrawCanvas() {
+      if (!baseImage) return;
+      
       clearCanvas();
       drawBaseImage();
       
-      // Dibujar todos los trazos guardados
+      // Dibujar todos los puntos guardados
       ctx.save();
+      ctx.translate(canvasOffset.x, canvasOffset.y);
       ctx.scale(scale, scale);
       
       for (const path of paths) {
-        // Dibujar líneas
-        if (path.points.length > 1) {
-          drawPath(path.points);
-        }
-        
-        // Dibujar puntos
         for (const dot of path.dots) {
           drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity);
         }
       }
       
-      // Dibujar trazo actual
+      // Dibujar puntos actuales
       if (currentPath) {
-        if (currentPath.points.length > 1) {
-          drawPath(currentPath.points);
-        }
-        
         for (const dot of currentPath.dots) {
           drawDot(dot.x, dot.y, dot.size, dot.color, dot.opacity);
         }
@@ -358,28 +356,11 @@
       ctx.restore();
     }
 
-    function drawPath(points) {
-      if (points.length < 1) return;
-      
-      ctx.beginPath();
-      ctx.moveTo(points[0].x, points[0].y);
-      
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
-      
-      ctx.strokeStyle = points[0].color;
-      ctx.lineWidth = points[0].size;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.globalAlpha = points[0].opacity;
-      ctx.stroke();
-    }
-
     // Funciones de imagen base
     function drawBaseImage() {
-      if (baseImage.complete && baseImage.naturalWidth !== 0) {
+      if (baseImage && baseImage.complete && baseImage.naturalWidth !== 0) {
         ctx.save();
+        ctx.translate(canvasOffset.x, canvasOffset.y);
         ctx.scale(scale, scale);
         ctx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
         ctx.restore();
@@ -390,8 +371,8 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    function resizeCanvas() {
-      if (!baseImage.complete || baseImage.naturalWidth === 0) return;
+    function calculateCanvasSize() {
+      if (!baseImage) return;
       
       const container = canvasContainer;
       const containerWidth = container.clientWidth;
@@ -402,14 +383,36 @@
       const scaleY = containerHeight / imageHeight;
       scale = Math.min(scaleX, scaleY) * 0.95; // 95% para margen
       
-      // Establecer tamaño del canvas
-      canvas.width = imageWidth * scale;
-      canvas.height = imageHeight * scale;
+      // Calcular offset para centrar
+      canvasOffset = {
+        x: (containerWidth - imageWidth * scale) / 2,
+        y: (containerHeight - imageHeight * scale) / 2
+      };
       
+      // Establecer tamaño del canvas
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
+    }
+
+    function handleResize() {
+      calculateCanvasSize();
       redrawCanvas();
     }
 
-    // Funciones de undo/redo corregidas
+    function handleFullscreenChange() {
+      const isFullscreen = !!document.fullscreenElement;
+      
+      // Solo redibujar si el estado cambió
+      if (isFullscreen !== lastFullscreenState) {
+        lastFullscreenState = isFullscreen;
+        setTimeout(() => {
+          calculateCanvasSize();
+          redrawCanvas();
+        }, 100); // Pequeño retraso para asegurar que el resize terminó
+      }
+    }
+
+    // Funciones de undo/redo
     function undo() {
       if (paths.length > 0) {
         redoStack.push(paths.pop());
@@ -466,10 +469,12 @@
       baseImage.onload = function() {
         imageWidth = this.naturalWidth;
         imageHeight = this.naturalHeight;
-        resizeCanvas();
+        calculateCanvasSize();
+        redrawCanvas();
         
         const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
         currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
+        updateEmptyState();
       };
       baseImage.onerror = function() {
         console.error("Error al cargar la imagen del cartón");
@@ -488,15 +493,29 @@
         baseImage.onload = function() {
           imageWidth = this.naturalWidth;
           imageHeight = this.naturalHeight;
-          resizeCanvas();
+          calculateCanvasSize();
+          redrawCanvas();
           currentCartonDisplay.textContent = "Personalizado";
+          updateEmptyState();
         };
         baseImage.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
 
+    function updateEmptyState() {
+      if (baseImage) {
+        emptyMessage.style.display = 'none';
+        canvas.style.display = 'block';
+      } else {
+        emptyMessage.style.display = 'flex';
+        canvas.style.display = 'none';
+      }
+    }
+
     function save() {
+      if (!baseImage) return;
+      
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = imageWidth;
       tempCanvas.height = imageHeight;
@@ -505,24 +524,6 @@
       tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
       
       for (const path of paths) {
-        // Dibujar líneas
-        if (path.points.length > 1) {
-          tempCtx.beginPath();
-          tempCtx.moveTo(path.points[0].x, path.points[0].y);
-          
-          for (let i = 1; i < path.points.length; i++) {
-            tempCtx.lineTo(path.points[i].x, path.points[i].y);
-          }
-          
-          tempCtx.strokeStyle = path.points[0].color;
-          tempCtx.lineWidth = path.points[0].size;
-          tempCtx.lineCap = "round";
-          tempCtx.lineJoin = "round";
-          tempCtx.globalAlpha = path.points[0].opacity;
-          tempCtx.stroke();
-        }
-        
-        // Dibujar puntos
         for (const dot of path.dots) {
           tempCtx.beginPath();
           tempCtx.arc(dot.x, dot.y, dot.size / 2, 0, Math.PI * 2);
@@ -564,6 +565,7 @@
 
     // Manejo táctil mejorado
     function handleTouchStart(e) {
+      if (!baseImage) return;
       e.preventDefault();
       const touch = e.touches[0];
       const mouseEvent = new MouseEvent("mousedown", {
@@ -574,6 +576,7 @@
     }
 
     function handleTouchMove(e) {
+      if (!baseImage) return;
       e.preventDefault();
       const touch = e.touches[0];
       const mouseEvent = new MouseEvent("mousemove", {
@@ -584,6 +587,7 @@
     }
 
     function handleTouchEnd(e) {
+      if (!baseImage) return;
       e.preventDefault();
       const mouseEvent = new MouseEvent("mouseup", {});
       canvas.dispatchEvent(mouseEvent);

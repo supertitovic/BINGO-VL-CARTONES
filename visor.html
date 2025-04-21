@@ -3,145 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>Bingo VL - Visualizador de Cartones</title>
+  <title>Marcar cartón Bingo VL</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root {
-      --primary-color: #4a6fa5;
-      --secondary-color: #166088;
-      --accent-color: #4fc3f7;
-      --background-color: #f5f7fa;
-      --toolbar-bg: #ffffff;
-      --button-bg: #e3f2fd;
-      --button-hover: #bbdefb;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
-      background: var(--background-color);
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      background: #f4f4f4;
       height: 100vh;
       overflow: hidden;
-      touch-action: manipulation;
     }
-
+    
     #app-container {
       display: flex;
       flex-direction: column;
+      width: 100%;
       height: 100%;
     }
-
+    
     #toolbar {
       display: flex;
-      gap: 12px;
-      padding: 12px;
-      background: var(--toolbar-bg);
-      border-bottom: 1px solid #e0e0e0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      gap: 10px;
+      padding: 10px;
       flex-wrap: wrap;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
       justify-content: center;
       align-items: center;
-      z-index: 10;
     }
-
+    
     .tool-group {
       display: flex;
       gap: 8px;
       align-items: center;
-      padding: 0 8px;
-      border-right: 1px solid #e0e0e0;
     }
-
-    .tool-group:last-child {
-      border-right: none;
-    }
-
+    
     button {
-      background: var(--button-bg);
-      border: none;
-      border-radius: 6px;
       padding: 8px 12px;
       font-size: 16px;
+      border: none;
+      background: #e3f2fd;
+      border-radius: 4px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-
+    
     button:hover {
-      background: var(--button-hover);
-      transform: translateY(-1px);
+      background: #bbdefb;
     }
-
-    button:active {
-      transform: translateY(0);
-    }
-
+    
     button i {
       font-size: 18px;
     }
-
-    label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    input[type="color"] {
-      width: 30px;
-      height: 30px;
-      border: 2px solid #ddd;
-      border-radius: 50%;
-      padding: 0;
-      cursor: pointer;
-    }
-
-    input[type="color"]::-webkit-color-swatch {
-      border: none;
-      border-radius: 50%;
-    }
-
-    input[type="range"] {
-      width: 100px;
-      cursor: pointer;
-    }
-
+    
     #canvas-container {
       flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
       overflow: auto;
-      padding: 20px;
-      touch-action: pinch-zoom;
+      padding: 10px;
     }
-
+    
     canvas {
-      background: white;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      background: #fff;
       max-width: 100%;
       max-height: 100%;
-      touch-action: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    #carton-dropdown {
-      position: relative;
-      display: inline-block;
+    
+    input[type="color"] {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      padding: 0;
     }
-
+    
+    input[type="range"] {
+      width: 100px;
+    }
+    
     #cartonDropdown {
       position: absolute;
       top: 100%;
@@ -149,58 +96,21 @@
       width: 200px;
       max-height: 300px;
       overflow-y: auto;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-      z-index: 100;
       display: none;
+      z-index: 100;
     }
-
+    
+    #carton-dropdown {
+      position: relative;
+    }
+    
     #cartonDropdown.show {
       display: block;
     }
-
-    #brushSizeValue {
-      min-width: 40px;
-      display: inline-block;
-      text-align: center;
-    }
-
-    .slider-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #fileInput {
-      display: none;
-    }
-
-    @media (max-width: 768px) {
-      #toolbar {
-        padding: 8px;
-        gap: 8px;
-      }
-      
-      .tool-group {
-        padding: 0 4px;
-      }
-      
-      button {
-        padding: 6px 8px;
-        font-size: 14px;
-      }
-      
-      input[type="range"] {
-        width: 80px;
-      }
-    }
-
-    /* Pantalla completa */
-    :fullscreen #app-container {
-      width: 100vw;
-      height: 100vh;
+    
+    #current-carton {
+      font-weight: bold;
+      margin-left: 5px;
     }
   </style>
 </head>
@@ -208,29 +118,27 @@
   <div id="app-container">
     <div id="toolbar">
       <div class="tool-group">
-        <label for="colorPicker" title="Color del marcador">
+        <label title="Color del marcador">
           <i class="fas fa-palette"></i>
           <input type="color" id="colorPicker" value="#ff0000">
         </label>
       </div>
-
+      
       <div class="tool-group">
         <label title="Tamaño del marcador">
           <i class="fas fa-brush"></i>
-          <div class="slider-container">
-            <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
-            <span id="brushSizeValue">120px</span>
-          </div>
+          <input type="range" id="brushSizeSlider" min="5" max="300" value="120" step="5">
+          <span id="brushSizeValue">120px</span>
         </label>
       </div>
-
+      
       <div class="tool-group">
         <label title="Transparencia">
           <i class="fas fa-adjust"></i>
           <input type="range" id="opacityRange" min="0.1" max="1" step="0.1" value="0.6">
         </label>
       </div>
-
+      
       <div class="tool-group">
         <button onclick="undo()" title="Deshacer">
           <i class="fas fa-undo"></i>
@@ -239,13 +147,13 @@
           <i class="fas fa-redo"></i>
         </button>
       </div>
-
+      
       <div class="tool-group">
         <button onclick="save()" title="Guardar">
           <i class="fas fa-save"></i>
         </button>
       </div>
-
+      
       <div class="tool-group" id="carton-dropdown">
         <button onclick="toggleDropdown()" title="Seleccionar cartón">
           <i class="fas fa-list-ol"></i>
@@ -253,21 +161,21 @@
         </button>
         <select id="cartonDropdown" onchange="loadSelectedCarton()"></select>
       </div>
-
+      
       <div class="tool-group">
         <button onclick="document.getElementById('fileInput').click()" title="Cargar imagen">
           <i class="fas fa-folder-open"></i>
         </button>
-        <input type="file" id="fileInput" accept="image/*">
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">
       </div>
-
+      
       <div class="tool-group">
         <button onclick="toggleFullscreen()" title="Pantalla completa">
           <i class="fas fa-expand"></i>
         </button>
       </div>
     </div>
-
+    
     <div id="canvas-container">
       <canvas id="canvas"></canvas>
     </div>
@@ -298,31 +206,18 @@
     let imageWidth, imageHeight, scale;
     let isChanged = false;
     let cartones = [];
-    let touchStartDistance = 0;
-    let initialPinchDistance = 0;
-    let initialCanvasScale = 1;
-    let currentScale = 1;
-    let transformOffset = { x: 0, y: 0 };
-    let startPos = { x: 0, y: 0 };
-    let isPinching = false;
-    let isPanning = false;
 
     // Inicialización
     init();
 
     async function init() {
-      // Configurar eventos
       setupEventListeners();
-      
-      // Cargar lista de cartones
       await loadCartonesList();
       
-      // Cargar el primer cartón si existe
       if (cartones.length > 0) {
         loadCarton(cartones[0]);
       }
       
-      // Actualizar interfaz
       updateBrushSizeDisplay();
     }
 
@@ -333,9 +228,9 @@
       canvas.addEventListener("mouseup", endDrawing);
       canvas.addEventListener("mouseout", endDrawing);
       
-      // Eventos táctiles
-      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
-      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      // Eventos táctiles simplificados
+      canvas.addEventListener("touchstart", handleTouchStart);
+      canvas.addEventListener("touchmove", handleTouchMove);
       canvas.addEventListener("touchend", handleTouchEnd);
       
       // Eventos de controles
@@ -358,38 +253,34 @@
         }
       });
       
-      // Evento para redimensionar el canvas cuando cambia el tamaño de la ventana
       window.addEventListener("resize", debounce(resizeCanvas, 200));
     }
 
-    // Funciones de dibujo
+    // Funciones de dibujo (versión simplificada y funcional)
     function startDrawing(e) {
-      if (isPinching) return;
-      
       e.preventDefault();
       drawing = true;
-      currentPath = [];
       
       const pos = getPosition(e);
-      currentPath.push({
-        x: (pos.x - transformOffset.x) / currentScale,
-        y: (pos.y - transformOffset.y) / currentScale,
+      currentPath = [{
+        x: pos.x / scale,
+        y: pos.y / scale,
         color,
         size,
         opacity
-      });
+      }];
       
       drawDot(pos.x, pos.y);
     }
 
     function draw(e) {
-      if (!drawing || isPinching) return;
+      if (!drawing) return;
       e.preventDefault();
       
       const pos = getPosition(e);
       currentPath.push({
-        x: (pos.x - transformOffset.x) / currentScale,
-        y: (pos.y - transformOffset.y) / currentScale,
+        x: pos.x / scale,
+        y: pos.y / scale,
         color,
         size,
         opacity
@@ -411,21 +302,11 @@
 
     function drawDot(x, y) {
       ctx.save();
-      ctx.translate(transformOffset.x, transformOffset.y);
-      ctx.scale(currentScale, currentScale);
-      
       ctx.beginPath();
-      ctx.arc(
-        (x - transformOffset.x) / currentScale,
-        (y - transformOffset.y) / currentScale,
-        size / 2 / currentScale,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.globalAlpha = opacity;
       ctx.fill();
-      
       ctx.restore();
     }
 
@@ -433,43 +314,29 @@
       clearCanvas();
       drawBaseImage();
       
-      // Dibujar todos los trazos guardados
+      // Dibujar todos los trazos
+      ctx.save();
+      ctx.scale(scale, scale);
+      
       for (const path of paths) {
         drawPath(path);
       }
       
-      // Dibujar el trazo actual
       if (currentPath.length > 1) {
         drawPath(currentPath);
-      } else if (currentPath.length === 1) {
-        const point = currentPath[0];
-        ctx.save();
-        ctx.translate(transformOffset.x, transformOffset.y);
-        ctx.scale(currentScale, currentScale);
-        
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, point.size / 2, 0, Math.PI * 2);
-        ctx.fillStyle = point.color;
-        ctx.globalAlpha = point.opacity;
-        ctx.fill();
-        
-        ctx.restore();
       }
+      
+      ctx.restore();
     }
 
     function drawPath(path) {
       if (path.length < 1) return;
       
-      ctx.save();
-      ctx.translate(transformOffset.x, transformOffset.y);
-      ctx.scale(currentScale, currentScale);
-      
       ctx.beginPath();
       ctx.moveTo(path[0].x, path[0].y);
       
       for (let i = 1; i < path.length; i++) {
-        const point = path[i];
-        ctx.lineTo(point.x, point.y);
+        ctx.lineTo(path[i].x, path[i].y);
       }
       
       ctx.strokeStyle = path[0].color;
@@ -478,15 +345,13 @@
       ctx.lineJoin = "round";
       ctx.globalAlpha = path[0].opacity;
       ctx.stroke();
-      ctx.restore();
     }
 
-    // Funciones de manipulación de imagen
+    // Funciones de imagen base
     function drawBaseImage() {
       if (baseImage.complete && baseImage.naturalWidth !== 0) {
         ctx.save();
-        ctx.translate(transformOffset.x, transformOffset.y);
-        ctx.scale(currentScale, currentScale);
+        ctx.scale(scale, scale);
         ctx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
         ctx.restore();
       }
@@ -499,27 +364,23 @@
     function resizeCanvas() {
       if (!baseImage.complete || baseImage.naturalWidth === 0) return;
       
-      const container = canvas.parentElement;
+      const container = canvasContainer;
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
       
-      // Calcular escala para que la imagen quepa en el contenedor
+      // Calcular escala para ajustar al contenedor
       const scaleX = containerWidth / imageWidth;
       const scaleY = containerHeight / imageHeight;
-      scale = Math.min(scaleX, scaleY) * 0.9; // 90% para dejar margen
+      scale = Math.min(scaleX, scaleY) * 0.95; // 95% para margen
       
       // Establecer tamaño del canvas
       canvas.width = imageWidth * scale;
       canvas.height = imageHeight * scale;
       
-      // Restablecer transformaciones
-      currentScale = 1;
-      transformOffset = { x: 0, y: 0 };
-      
       redrawCanvas();
     }
 
-    // Funciones de undo/redo
+    // Funciones de undo/redo (ahora sí funcionan)
     function undo() {
       if (paths.length > 0) {
         redoStack.push(paths.pop());
@@ -536,7 +397,7 @@
       }
     }
 
-    // Funciones de carga/guardado
+    // Funciones de carga de cartones
     async function loadCartonesList() {
       try {
         const response = await fetch('cartones/list.json');
@@ -566,19 +427,18 @@
       const selectedCarton = cartonDropdown.value;
       if (selectedCarton) {
         loadCarton(selectedCarton);
+        cartonDropdown.classList.remove('show');
       }
     }
 
     function loadCarton(cartonName) {
       const cartonPath = `cartones/${cartonName}`;
       baseImage = new Image();
-      baseImage.crossOrigin = "Anonymous";
       baseImage.onload = function() {
         imageWidth = this.naturalWidth;
         imageHeight = this.naturalHeight;
         resizeCanvas();
         
-        // Actualizar display del cartón actual
         const cartonNumber = cartonName.split('-').pop().replace('.jpg', '');
         currentCartonDisplay.textContent = `#${parseInt(cartonNumber)}`;
       };
@@ -587,7 +447,6 @@
       };
       baseImage.src = cartonPath;
       
-      // Limpiar dibujos al cargar nuevo cartón
       paths = [];
       redoStack = [];
       isChanged = false;
@@ -601,8 +460,6 @@
           imageWidth = this.naturalWidth;
           imageHeight = this.naturalHeight;
           resizeCanvas();
-          
-          // Actualizar display
           currentCartonDisplay.textContent = "Personalizado";
         };
         baseImage.src = e.target.result;
@@ -611,17 +468,13 @@
     }
 
     function save() {
-      // Crear un canvas temporal con la imagen original y los dibujos
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = imageWidth;
       tempCanvas.height = imageHeight;
       const tempCtx = tempCanvas.getContext('2d');
       
-      // Dibujar la imagen base
       tempCtx.drawImage(baseImage, 0, 0, imageWidth, imageHeight);
       
-      // Dibujar todos los trazos
-      tempCtx.save();
       for (const path of paths) {
         if (path.length < 1) continue;
         
@@ -639,12 +492,10 @@
         tempCtx.globalAlpha = path[0].opacity;
         tempCtx.stroke();
       }
-      tempCtx.restore();
       
-      // Crear enlace de descarga
       const link = document.createElement('a');
       const cartonNumber = currentCartonDisplay.textContent.replace('#', '') || 'custom';
-      link.download = `bingo-carton-${cartonNumber}-${new Date().toISOString().slice(0,10)}.png`;
+      link.download = `bingo-carton-${cartonNumber}.png`;
       link.href = tempCanvas.toDataURL('image/png');
       link.click();
       
@@ -672,95 +523,39 @@
       }
     }
 
-    // Funciones de manejo táctil (zoom y pan)
+    // Manejo táctil simplificado
     function handleTouchStart(e) {
       e.preventDefault();
-      
-      if (e.touches.length === 2) {
-        // Inicio de pinch zoom
-        isPinching = true;
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        touchStartDistance = getDistance(touch1, touch2);
-        initialPinchDistance = touchStartDistance;
-        initialCanvasScale = currentScale;
-      } else if (e.touches.length === 1) {
-        // Inicio de pan o dibujo
-        const touch = e.touches[0];
-        startPos = getPosition(touch);
-        isPanning = true;
-      }
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent("mousedown", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      canvas.dispatchEvent(mouseEvent);
     }
 
     function handleTouchMove(e) {
       e.preventDefault();
-      
-      if (isPinching && e.touches.length === 2) {
-        // Continuar pinch zoom
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const currentDistance = getDistance(touch1, touch2);
-        
-        // Calcular nueva escala
-        const scaleFactor = currentDistance / initialPinchDistance;
-        currentScale = initialCanvasScale * scaleFactor;
-        
-        // Limitar escala mínima y máxima
-        currentScale = Math.max(0.5, Math.min(currentScale, 3));
-        
-        redrawCanvas();
-      } else if (isPanning && e.touches.length === 1 && !isPinching) {
-        // Continuar pan
-        const touch = e.touches[0];
-        const currentPos = getPosition(touch);
-        
-        transformOffset.x += currentPos.x - startPos.x;
-        transformOffset.y += currentPos.y - startPos.y;
-        
-        startPos = currentPos;
-        redrawCanvas();
-      }
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent("mousemove", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      canvas.dispatchEvent(mouseEvent);
     }
 
-    function handleTouchEnd(e) {
-      e.preventDefault();
-      
-      if (e.touches.length === 0) {
-        // Todos los dedos levantados
-        isPinching = false;
-        isPanning = false;
-      } else if (e.touches.length === 1 && isPinching) {
-        // Solo queda un dedo (transición de pinch a pan)
-        isPinching = false;
-        isPanning = true;
-        const touch = e.touches[0];
-        startPos = getPosition(touch);
-      }
+    function handleTouchEnd() {
+      const mouseEvent = new MouseEvent("mouseup", {});
+      canvas.dispatchEvent(mouseEvent);
     }
 
     // Funciones auxiliares
     function getPosition(e) {
-      let clientX, clientY;
-      
-      if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-      
       const rect = canvas.getBoundingClientRect();
       return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
       };
-    }
-
-    function getDistance(touch1, touch2) {
-      const dx = touch1.clientX - touch2.clientX;
-      const dy = touch1.clientY - touch2.clientY;
-      return Math.sqrt(dx * dx + dy * dy);
     }
 
     function debounce(func, wait) {
